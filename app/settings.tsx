@@ -1,9 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -12,6 +10,8 @@ import { loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storag
 import { configurePiDebug } from '../src/api/piServer';
 import { AppSettings } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
+import TomePageFrame from '../src/components/TomePageFrame';
+import { Button, Section, Stepper, Switch } from '../src/components/parchment';
 
 const ZONE_OPTIONS: { id: string; label: string; note?: string }[] = [
   { id: 'LIB',   label: 'Library (top card)' },
@@ -40,19 +40,11 @@ export default function SettingsScreen() {
     }, []),
   );
 
-  const setSleeveCount = (delta: number) => {
-    setSettings(prev => ({
-      ...prev,
-      sleeveCount: Math.max(1, Math.min(60, prev.sleeveCount + delta)),
-    }));
-  };
+  const setSleeveCount = (next: number) =>
+    setSettings(prev => ({ ...prev, sleeveCount: next }));
 
-  const setLibraryDepth = (delta: number) => {
-    setSettings(prev => ({
-      ...prev,
-      librarySleeveDepth: Math.max(1, Math.min(10, (prev.librarySleeveDepth ?? 1) + delta)),
-    }));
-  };
+  const setLibraryDepth = (next: number) =>
+    setSettings(prev => ({ ...prev, librarySleeveDepth: next }));
 
   const toggleZone = (zoneId: string) => {
     setSettings(prev => {
@@ -72,217 +64,135 @@ export default function SettingsScreen() {
     router.back();
   };
 
+  const remainingSleeves = settings.sleeveCount - 1;
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-
-        {/* Sleeve count */}
-        <Text style={styles.sectionTitle}>Physical Sleeves</Text>
-        <View style={styles.card}>
-          <View style={styles.sleeveRow}>
-            <Text style={styles.rowLabel}>Sleeve count</Text>
-            <View style={styles.stepper}>
-              <Pressable
-                style={[styles.stepBtn, settings.sleeveCount <= 1 && styles.stepBtnDisabled]}
-                onPress={() => setSleeveCount(-1)}
-                disabled={settings.sleeveCount <= 1}
-              >
-                <Text style={styles.stepBtnText}>−</Text>
-              </Pressable>
-              <Text style={styles.stepValue}>{settings.sleeveCount}</Text>
-              <Pressable
-                style={[styles.stepBtn, settings.sleeveCount >= 60 && styles.stepBtnDisabled]}
-                onPress={() => setSleeveCount(1)}
-                disabled={settings.sleeveCount >= 60}
-              >
-                <Text style={styles.stepBtnText}>+</Text>
-              </Pressable>
+    <TomePageFrame>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <Section title="Physical Sleeves">
+          <View style={styles.row}>
+            <View style={styles.rowLabelCol}>
+              <Text style={styles.labelText}>Sleeve count</Text>
             </View>
+            <Stepper value={settings.sleeveCount} min={1} max={60} onChange={setSleeveCount} />
           </View>
-          <View style={[styles.sleeveRow, styles.sleeveRowBorder]}>
-            <View style={styles.depthLabelCol}>
-              <Text style={styles.rowLabel}>Library depth (sleeves)</Text>
-              <Text style={styles.rowSublabel}>How many top-of-library cards get a physical sleeve</Text>
+          <View style={[styles.row, styles.rowDivider]}>
+            <View style={styles.rowLabelCol}>
+              <Text style={styles.labelText}>Library depth (sleeves)</Text>
+              <Text style={styles.subLabelText}>
+                How many top-of-library cards get a physical sleeve
+              </Text>
             </View>
-            <View style={styles.stepper}>
-              <Pressable
-                style={[styles.stepBtn, (settings.librarySleeveDepth ?? 1) <= 1 && styles.stepBtnDisabled]}
-                onPress={() => setLibraryDepth(-1)}
-                disabled={(settings.librarySleeveDepth ?? 1) <= 1}
-              >
-                <Text style={styles.stepBtnText}>−</Text>
-              </Pressable>
-              <Text style={styles.stepValue}>{settings.librarySleeveDepth ?? 1}</Text>
-              <Pressable
-                style={[styles.stepBtn, (settings.librarySleeveDepth ?? 1) >= 10 && styles.stepBtnDisabled]}
-                onPress={() => setLibraryDepth(1)}
-                disabled={(settings.librarySleeveDepth ?? 1) >= 10}
-              >
-                <Text style={styles.stepBtnText}>+</Text>
-              </Pressable>
-            </View>
+            <Stepper
+              value={settings.librarySleeveDepth ?? 1}
+              min={1}
+              max={10}
+              onChange={setLibraryDepth}
+            />
           </View>
-        </View>
-        <Text style={styles.hint}>
-          Commander always occupies sleeve 1. Remaining {settings.sleeveCount - 1} sleeve{settings.sleeveCount - 1 !== 1 ? 's' : ''} are filled from physical zones below.
+        </Section>
+        <Text style={styles.trailingHint}>
+          Commander always occupies sleeve 1. Remaining {remainingSleeves} sleeve
+          {remainingSleeves !== 1 ? 's' : ''} are filled from physical zones below.
         </Text>
 
-        {/* Physical zones */}
-        <Text style={styles.sectionTitle}>Physical Zones</Text>
-        <Text style={styles.hint}>
-          Cards in physical zones are pushed to sleeves. Cards in virtual zones are tracked in the app only.
-        </Text>
-        <View style={styles.card}>
+        <Section
+          title="Physical Zones"
+          hint="Cards in physical zones are pushed to sleeves. Cards in virtual zones are tracked in the app only."
+        >
           {ZONE_OPTIONS.map((zone, i) => (
-            <View
-              key={zone.id}
-              style={[styles.toggleRow, i < ZONE_OPTIONS.length - 1 && styles.toggleRowBorder]}
-            >
-              <View style={styles.toggleInfo}>
-                <Text style={styles.toggleLabel}>{zone.label}</Text>
-                {zone.note && <Text style={styles.toggleNote}>{zone.note}</Text>}
+            <View key={zone.id} style={[styles.row, i > 0 && styles.rowDivider]}>
+              <View style={styles.rowLabelCol}>
+                <Text style={styles.labelText}>{zone.label}</Text>
+                {zone.note && <Text style={styles.subLabelText}>{zone.note}</Text>}
               </View>
               <Switch
                 value={settings.physicalZones.includes(zone.id)}
                 onValueChange={() => toggleZone(zone.id)}
-                trackColor={{ false: colors.divider, true: colors.accent.dark }}
-                thumbColor={settings.physicalZones.includes(zone.id) ? colors.accent.primary : colors.text.muted}
               />
             </View>
           ))}
-        </View>
+        </Section>
 
-        {/* Dev Mode */}
-        <Text style={styles.sectionTitle}>Developer</Text>
-        <View style={styles.card}>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Text style={styles.toggleLabel}>Dev Mode</Text>
-              <Text style={styles.toggleNote}>Reveals hidden game information</Text>
+        <Section title="Developer">
+          <View style={styles.row}>
+            <View style={styles.rowLabelCol}>
+              <Text style={styles.labelText}>Dev Mode</Text>
+              <Text style={styles.subLabelText}>Reveals hidden game information</Text>
             </View>
             <Switch
               value={settings.devMode}
-              onValueChange={v => setSettings(prev => ({
-                ...prev,
-                devMode: v,
-                piDebugAlerts: v ? prev.piDebugAlerts : false,
-              }))}
-              trackColor={{ false: colors.divider, true: colors.accent.dark }}
-              thumbColor={settings.devMode ? colors.accent.primary : colors.text.muted}
+              onValueChange={v =>
+                setSettings(prev => ({
+                  ...prev,
+                  devMode: v,
+                  piDebugAlerts: v ? prev.piDebugAlerts : false,
+                }))
+              }
             />
           </View>
           {settings.devMode && (
-            <View style={[styles.toggleRow, styles.toggleRowBorder, styles.subToggleRow]}>
-              <View style={styles.toggleInfo}>
-                <Text style={styles.toggleLabel}>Pi Debug Alerts</Text>
-                <Text style={styles.toggleNote}>Show blocking step-by-step alerts for all Pi network calls</Text>
+            <View style={[styles.row, styles.rowDivider]}>
+              <View style={styles.rowLabelCol}>
+                <Text style={styles.labelText}>Pi Debug Alerts</Text>
+                <Text style={styles.subLabelText}>
+                  Show blocking step-by-step alerts for all Pi network calls
+                </Text>
               </View>
               <Switch
                 value={settings.piDebugAlerts}
-                onValueChange={v => setSettings(prev => ({ ...prev, piDebugAlerts: v }))}
-                trackColor={{ false: colors.divider, true: colors.accent.dark }}
-                thumbColor={settings.piDebugAlerts ? colors.accent.primary : colors.text.muted}
+                onValueChange={v =>
+                  setSettings(prev => ({ ...prev, piDebugAlerts: v }))
+                }
               />
             </View>
           )}
-        </View>
-
+        </Section>
       </ScrollView>
 
-      <Pressable style={styles.saveBtn} onPress={handleSave}>
-        <Text style={styles.saveBtnText}>Save Settings</Text>
-      </Pressable>
-    </View>
+      <View style={styles.saveWrap}>
+        <Button onPress={handleSave}>Save Settings</Button>
+      </View>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: 'transparent' },
-    scroll: { padding: 16, paddingBottom: 8 },
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: 12 },
 
-    sectionTitle: {
-      color: colors.accent.primary,
-      fontSize: 12,
-      fontWeight: '800',
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
-      marginTop: 20,
-      marginBottom: 8,
-      marginLeft: 4,
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
     },
-    hint: {
-      color: colors.text.muted,
+    rowDivider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.text.inkSoft,
+    },
+    rowLabelCol: { flex: 1, marginRight: 12 },
+    labelText: {
+      color: colors.text.ink,
+      fontFamily: 'serif',
+      fontSize: 16,
+    },
+    subLabelText: {
+      color: colors.text.inkSoft,
+      fontSize: 12,
+      marginTop: 2,
+      lineHeight: 16,
+    },
+
+    trailingHint: {
+      color: colors.text.inkSoft,
       fontSize: 12,
       lineHeight: 18,
-      marginBottom: 8,
-      marginLeft: 4,
+      marginTop: 8,
+      marginBottom: 24,
     },
 
-    card: {
-      backgroundColor: colors.bg.surface,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.divider,
-      overflow: 'hidden',
-    },
-
-    sleeveRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-    },
-    sleeveRowBorder: {
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.divider,
-    },
-    depthLabelCol: { flex: 1, marginRight: 12 },
-    rowLabel: { color: colors.text.primary, fontSize: 16 },
-    rowSublabel: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
-
-    stepper: { flexDirection: 'row', alignItems: 'center', gap: 0 },
-    stepBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 8,
-      backgroundColor: colors.accent.dark,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    stepBtnDisabled: { opacity: 0.35 },
-    stepBtnText: { color: colors.accent.primary, fontSize: 22, fontWeight: '700', lineHeight: 26 },
-    stepValue: {
-      color: colors.accent.primary,
-      fontSize: 22,
-      fontWeight: '800',
-      minWidth: 48,
-      textAlign: 'center',
-    },
-
-    toggleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-    },
-    toggleRowBorder: {
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.divider,
-    },
-    subToggleRow: { backgroundColor: colors.bg.elevated },
-    toggleInfo: { flex: 1 },
-    toggleLabel: { color: colors.text.primary, fontSize: 15 },
-    toggleNote: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
-
-    saveBtn: {
-      margin: 16,
-      backgroundColor: colors.accent.dark,
-      borderRadius: 10,
-      paddingVertical: 16,
-      alignItems: 'center',
-    },
-    saveBtnText: { color: colors.accent.primary, fontSize: 17, fontWeight: '800' },
+    saveWrap: { marginTop: 8 },
   });
 }
