@@ -1,22 +1,24 @@
-import { useCallback, useState, useMemo} from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   Alert,
   ActivityIndicator,
   Image,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  ScrollView,
 } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getDeck, deleteDeck } from '../../src/storage/dndStorage';
 import { DndDeck } from '../../src/types/dnd';
 import spellMeta from '../../src/assets/dnd/spells.json';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
 import spellImages from '../../src/assets/dnd/spells/index';
 import { sendToSleeve, clearMemo, dndSpellDescriptor, PI_SERVER } from '../../src/api/sleeveService';
 import { getRegisteredSleeves } from '../../src/api/piServer';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button } from '../../src/components/parchment';
 
 interface SpellMeta {
   level: number;
@@ -137,20 +139,24 @@ export default function DndDeckViewScreen() {
 
   if (!loaded) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
-      </View>
+      <TomePageFrame>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.accent.primary} size="large" />
+        </View>
+      </TomePageFrame>
     );
   }
 
   if (!deck) {
     return (
-      <View style={styles.missing}>
-        <Text style={styles.missingTitle}>Deck not found</Text>
-        <Pressable style={styles.missingBtn} onPress={() => router.back()}>
-          <Text style={styles.missingBtnLabel}>Back</Text>
-        </Pressable>
-      </View>
+      <TomePageFrame>
+        <View style={styles.center}>
+          <Text style={styles.missingTitle}>Deck not found</Text>
+          <View style={styles.missingBtnWrap}>
+            <Button onPress={() => router.back()}>Back</Button>
+          </View>
+        </View>
+      </TomePageFrame>
     );
   }
 
@@ -159,9 +165,6 @@ export default function DndDeckViewScreen() {
     setBusy(true);
     const t0 = Date.now();
 
-    // Buffer all [DND][diag] lines; also emit to console. POST the buffer to
-    // Pi /diag after handlePlay completes so lines land in journalctl next to
-    // the /sleeves + /display calls.
     const diagLines: string[] = [];
     const diag = (line: string, level: 'log' | 'warn' = 'log') => {
       if (level === 'warn') console.warn(line); else console.log(line);
@@ -178,7 +181,6 @@ export default function DndDeckViewScreen() {
     try {
       clearMemo();
 
-      // Build push list in level-asc-then-alpha order (matches on-screen grouping).
       const byLevel = new Map<number, string[]>();
       for (const name of deck.spells) {
         const lv = SPELL_META[name]?.level ?? -1;
@@ -202,7 +204,6 @@ export default function DndDeckViewScreen() {
         diag(`[DND][diag] ${sorted.length - registered.length} spell(s) exceed registered sleeves — truncating`, 'warn');
       }
 
-      // Compact pairing: sorted[i] → registered[i].
       const pairCount = Math.min(sorted.length, registered.length);
       diag(`[DND][diag] entering push loop — pairCount=${pairCount} (sorted=${sorted.length} registered=${registered.length})`);
       if (pairCount === 0) {
@@ -281,140 +282,149 @@ export default function DndDeckViewScreen() {
   const modText = deck.abilityMod !== undefined ? `  ·  +${deck.abilityMod} mod` : '';
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-
-      <View style={styles.header}>
-        <Text style={styles.deckName}>{deck.name}</Text>
-        <Text style={styles.deckMeta}>
-          {deck.className}  ·  Level {deck.level}{modText}
-        </Text>
-        <Text style={styles.deckCount}>
-          {deck.spells.length} spell{deck.spells.length === 1 ? '' : 's'}
-        </Text>
-      </View>
-
-      {levels.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No spells in this deck.</Text>
+    <TomePageFrame>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.deckName}>{deck.name}</Text>
+          <Text style={styles.deckMeta}>
+            {deck.className}  ·  Level {deck.level}{modText}
+          </Text>
+          <Text style={styles.deckCount}>
+            {deck.spells.length} spell{deck.spells.length === 1 ? '' : 's'}
+          </Text>
         </View>
-      ) : (
-        levels.map(lv => {
-          const list = byLevel.get(lv) ?? [];
-          return (
-            <View key={lv} style={styles.levelSection}>
-              <Text style={styles.levelHeader}>
-                {lv === -1 ? 'Unknown' : lv === 0 ? 'Cantrips' : `Level ${lv}`}
-              </Text>
-              {list.map(name => {
-                const info = SPELL_META[name];
-                const hasArt = (spellImages as Record<string, unknown>)[name] !== undefined
-                  && info?.png_filename !== null;
-                return (
-                  <View key={name} style={styles.spellRow}>
-                    <Text style={styles.spellName} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.spellMeta}>
-                      {info?.school ?? 'unknown school'}
-                      {!hasArt && '  ·  '}
-                      {!hasArt && <Text style={styles.noArtBadge}>no art</Text>}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          );
-        })
-      )}
+
+        {levels.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyText}>No spells in this deck.</Text>
+          </View>
+        ) : (
+          levels.map(lv => {
+            const list = byLevel.get(lv) ?? [];
+            return (
+              <View key={lv} style={styles.levelSection}>
+                <Text style={styles.levelHeader}>
+                  {lv === -1 ? 'Unknown' : lv === 0 ? 'Cantrips' : `Level ${lv}`}
+                </Text>
+                {list.map((name, i) => {
+                  const info = SPELL_META[name];
+                  const hasArt = (spellImages as Record<string, unknown>)[name] !== undefined
+                    && info?.png_filename !== null;
+                  return (
+                    <View key={name} style={[styles.spellRow, i === list.length - 1 && styles.spellRowLast]}>
+                      <Text style={styles.spellName} numberOfLines={1}>{name}</Text>
+                      <Text style={styles.spellMeta}>
+                        {info?.school ?? 'unknown school'}
+                        {!hasArt && '  ·  '}
+                        {!hasArt && <Text style={styles.noArtBadge}>no art</Text>}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.playBtn,
-            (pressed || busy) && styles.playBtnPressed,
-            deck.spells.length === 0 && styles.playBtnDisabled,
-          ]}
+        <Button
+          variant="primary"
           onPress={handlePlay}
           disabled={busy || deck.spells.length === 0}
         >
-          {busy ? (
-            <ActivityIndicator color={colors.bg.app} />
-          ) : (
-            <Text style={styles.playBtnLabel}>Play</Text>
-          )}
-        </Pressable>
-        <Pressable style={styles.deleteBtn} onPress={handleDelete}>
-          <Text style={styles.deleteBtnLabel}>Delete Deck</Text>
-        </Pressable>
+          {busy ? 'Pushing…' : 'Play'}
+        </Button>
+        <Button variant="secondary" onPress={handleDelete}>Delete Deck</Button>
       </View>
-
-    </ScrollView>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: 'transparent' },
-  container: { padding: 16, gap: 14, paddingBottom: 40 },
-  loading: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16, gap: 16 },
+
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
 
   header: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    padding: 16,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
     gap: 4,
   },
-  deckName: { color: colors.accent.primary, fontSize: 22, fontWeight: '800' },
-  deckMeta: { color: colors.text.secondary, fontSize: 13, marginTop: 2 },
-  deckCount: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
+  deckName: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
+  },
+  deckMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  deckCount: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 12,
+    marginTop: 2,
+  },
 
   empty: { padding: 24, alignItems: 'center' },
-  emptyText: { color: colors.text.muted, fontSize: 14 },
+  emptyText: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 14,
+  },
 
-  levelSection: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    padding: 12,
-    gap: 6,
-  },
+  levelSection: { gap: 4 },
   levelHeader: {
-    color: colors.accent.primary,
+    color: colors.text.ink,
+    fontFamily: fonts.display,
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 4,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 4,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
   },
-  spellRow: { paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.bg.elevated },
-  spellName: { color: colors.text.primary, fontSize: 14, fontWeight: '600' },
-  spellMeta: { color: colors.text.secondary, fontSize: 11, marginTop: 2 },
-  noArtBadge: { color: colors.text.muted, fontSize: 11, fontWeight: '700' },
+  spellRow: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
+  },
+  spellRowLast: { borderBottomWidth: 0 },
+  spellName: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
+  spellMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  noArtBadge: {
+    color: colors.status.warning,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+  },
 
   footer: { gap: 10, marginTop: 8 },
-  playBtn: {
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playBtnPressed: { opacity: 0.7 },
-  playBtnDisabled: { backgroundColor: colors.bg.elevated },
-  playBtnLabel: { color: colors.bg.app, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
 
-  deleteBtn: {
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
+  missingTitle: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 16,
   },
-  deleteBtnLabel: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
-
-  missing: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center', gap: 14 },
-  missingTitle: { color: colors.text.secondary, fontSize: 16 },
-  missingBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.accent.dark },
-  missingBtnLabel: { color: colors.text.primary, fontSize: 14, fontWeight: '700' },
+  missingBtnWrap: { minWidth: 120 },
 }); }
