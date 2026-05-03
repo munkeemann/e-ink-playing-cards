@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo} from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   Alert,
   FlatList,
@@ -12,6 +12,8 @@ import { router, useFocusEffect } from 'expo-router';
 import { deleteDeck, loadDecks } from '../../src/storage/deckStorage';
 import { Deck } from '../../src/types';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
 
 const MANA_IMAGES: Record<string, ReturnType<typeof require>> = {
   W: require('../../assets/images/white_mana.png'),
@@ -48,50 +50,57 @@ export default function DeckListScreen() {
   };
 
   const renderItem = ({ item }: { item: Deck }) => {
-    console.log('[DeckList] commander imagePath:', item.commanderImagePath);
-    // SAM1-69: render both commander names if this is a partner deck.
     const commanderNames = item.cards
       .filter(c => c.place === 'commander')
       .map(c => c.displayName);
     const subtitle = commanderNames.length > 0 ? commanderNames.join(' & ') : null;
     return (
       <Pressable
-        style={styles.tile}
+        style={styles.tileOuter}
         onPress={() => router.push(`/deck/${item.id}`)}
         onLongPress={() => handleDelete(item)}
       >
-        {item.commanderImagePath ? (
-          <Image
-            source={{ uri: item.commanderImagePath }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, styles.tilePlaceholder]} />
-        )}
-        <View style={styles.tileOverlay}>
-          <Text style={styles.tileName} numberOfLines={2}>
-            {item.name}
-          </Text>
-          {subtitle && (
-            <Text style={styles.tileCommander} numberOfLines={1}>{subtitle}</Text>
+        <View style={styles.tileInner}>
+          {item.commanderImagePath ? (
+            <Image
+              source={{ uri: item.commanderImagePath }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.tilePlaceholder]} />
           )}
-          <View style={styles.colorRow}>
-            {item.colors.map(c => MANA_IMAGES[c] ? (
-              <Image key={c} source={MANA_IMAGES[c]} style={styles.manaIcon} />
-            ) : null)}
+          <View style={[StyleSheet.absoluteFill, styles.tileWash]} />
+
+          <View style={styles.tileContent}>
+            <Text style={styles.tileName} numberOfLines={2}>{item.name}</Text>
+            {subtitle && (
+              <Text style={styles.tileCommander} numberOfLines={1}>{subtitle}</Text>
+            )}
+            <View style={styles.tileFooter}>
+              <View style={styles.colorRow}>
+                {item.colors.map(c => MANA_IMAGES[c] ? (
+                  <Image key={c} source={MANA_IMAGES[c]} style={styles.manaIcon} />
+                ) : null)}
+              </View>
+              <Text style={styles.cardCount}>{item.cards.length} cards</Text>
+            </View>
           </View>
-          <Text style={styles.cardCount}>{item.cards.length} cards</Text>
+
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={() => handleDelete(item)}
+            hitSlop={8}
+          >
+            <Text style={styles.deleteBtnLabel}>✕</Text>
+          </Pressable>
         </View>
-        <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item)} hitSlop={8}>
-          <Text style={styles.deleteBtnLabel}>✕</Text>
-        </Pressable>
       </Pressable>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <TomePageFrame>
       {decks.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No Decks</Text>
@@ -108,64 +117,125 @@ export default function DeckListScreen() {
       <Pressable style={styles.fab} onPress={() => router.push('/import')}>
         <Text style={styles.fabLabel}>+</Text>
       </Pressable>
-    </View>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  list: { padding: 14 },
-  tile: {
-    height: 120,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
+  list: { paddingBottom: 96 },
+
+  // ── Tile chrome ──────────────────────────────────────────────────────────
+  // Outer Pressable: parchmentDeep fill in the 3px border-gap, 1px gold rim.
+  // Inner View: 1px gold rim with overflow hidden, holds the commander image
+  // + dark wash + content stack. The 3px gap between the two gold rims is
+  // the "double-line gold border" idiom used elsewhere in the parchment
+  // chrome (TomePageFrame, TomeTileFrame).
+  tileOuter: {
+    height: 130,
     marginBottom: 14,
-    overflow: 'hidden',
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: colors.text.muted,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
+    overflow: 'hidden',
   },
-  tilePlaceholder: { backgroundColor: colors.bg.surface },
-  tileOverlay: {
+  tileInner: {
+    flex: 1,
+    margin: 3,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    overflow: 'hidden',
+  },
+  tilePlaceholder: { backgroundColor: colors.bg.parchmentDeep },
+  // Dark wash so cream/gold text remains legible over commander art.
+  tileWash: { backgroundColor: colors.overlay.darker },
+
+  tileContent: {
     flex: 1,
     padding: 12,
     justifyContent: 'space-between',
-    backgroundColor: colors.overlay.dark,
   },
-  tileName: { color: colors.text.primary, fontSize: 17, fontWeight: '700' },
-  tileCommander: { color: colors.accent.primary, fontSize: 12, marginTop: 2 },
-  colorRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
+  tileName: {
+    color: colors.text.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 17,
+    letterSpacing: 0.3,
+  },
+  tileCommander: {
+    color: colors.accent.primary,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  tileFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  colorRow: { flexDirection: 'row', gap: 6 },
   manaIcon: { width: 22, height: 22 },
-  cardCount: { color: colors.text.secondary, fontSize: 12, marginTop: 4 },
+  cardCount: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+
+  // Gold-outlined delete button (replaces the cyan-era overlay.dark circle).
   deleteBtn: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 4,
+    right: 4,
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.overlay.dark,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.overlay.darker,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteBtnLabel: { color: colors.text.secondary, fontSize: 11, fontWeight: '700' },
+  deleteBtnLabel: {
+    color: colors.text.primary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // ── Empty state ──────────────────────────────────────────────────────────
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  emptyTitle: { color: colors.accent.primary, fontSize: 22, fontWeight: '700' },
-  emptyHint: { color: colors.text.muted, fontSize: 14 },
+  emptyTitle: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
+  },
+  emptyHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
+
+  // ── FAB (+ import deck) ──────────────────────────────────────────────────
   fab: {
     position: 'absolute',
-    bottom: 28,
-    right: 22,
+    bottom: 16,
+    right: 16,
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: colors.accent.dark,
+    borderWidth: 1,
+    borderColor: colors.accent.dark,
+    backgroundColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 8,
-    shadowColor: colors.bg.app,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
+    elevation: 4,
+    shadowColor: colors.accent.dark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  fabLabel: { fontSize: 30, color: colors.accent.primary, lineHeight: 34 },
+  fabLabel: {
+    fontSize: 30,
+    color: colors.bg.app,
+    fontFamily: fonts.displayBold,
+    lineHeight: 34,
+  },
 }); }
