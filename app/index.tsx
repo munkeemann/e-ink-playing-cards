@@ -160,14 +160,14 @@ export default function GameSelectScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
-      <Pressable
-        style={styles.settingsBtn}
-        onPress={() => router.push('/settings')}
-        hitSlop={12}
-      >
-        <Text style={styles.settingsIcon}>⚙️</Text>
-      </Pressable>
       <TomePageFrame>
+        <Pressable
+          style={styles.settingsBtn}
+          onPress={() => router.push('/settings')}
+          hitSlop={12}
+        >
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </Pressable>
         <View style={styles.titleBlock}>
           <EyeOfProvidence gold={colors.accent.primary} />
           <Text style={styles.title}>The Arcanum</Text>
@@ -207,8 +207,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
 
   settingsBtn: {
     position: 'absolute',
-    top: 12,
-    right: 16,
+    top: 4,
+    right: 4,
     padding: 8,
     zIndex: 10,
   },
@@ -266,6 +266,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   tileWrap: {
     flex: 1,
+    aspectRatio: 4 / 5,
   },
   tilePressable: {
     flex: 1,

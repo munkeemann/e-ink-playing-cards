@@ -1,5 +1,12 @@
 /**
- * TomeTileFrame — illuminated card-style tile chrome at 4:5 aspect.
+ * TomeTileFrame — illuminated card-style tile chrome.
+ *
+ * Fills its parent (width: 100%, height: 100%). The parent is
+ * responsible for establishing width and height — typically via
+ * `flex: 1` plus `aspectRatio` on a wrapper View. This avoids a
+ * circular flex sizing problem when aspectRatio lives inside a
+ * nested Pressable that's a flex item itself.
+ *
  * Visual anatomy mirrors TomePageFrame at a smaller scale:
  *   - parchmentDeep fill (one shade darker than the page parchment).
  *   - Double-line gold border (outer + inner).
@@ -133,7 +140,8 @@ export default function TomeTileFrame({ pressed = false, style, children }: Prop
 
 const styles = StyleSheet.create({
   tile: {
-    aspectRatio: 4 / 5,
+    width: '100%',
+    height: '100%',
     overflow: 'hidden',
   },
   content: {
