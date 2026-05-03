@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { loadSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { configurePiDebug } from '../src/api/piServer';
@@ -82,10 +83,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={rootStyles.root}>
-      <ThemeProvider>
-        <TomeBackground />
-        <StackWithTheme />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <TomeBackground />
+          <StackWithTheme />
+        </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

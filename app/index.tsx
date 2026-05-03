@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  FlatList,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -8,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { loadDecks } from '../src/storage/deckStorage';
 import { loadHoldemGame } from '../src/storage/holdemStorage';
 import { loadCahGame } from '../src/storage/cahStorage';
@@ -17,51 +17,24 @@ import { HoldemGameState } from '../src/types/holdem';
 import { CahGameState } from '../src/types/cah';
 import { CahMaxsGameState } from '../src/types/cah_maxs';
 import { clearMemo } from '../src/api/sleeveService';
-import AmbientLayer from '../src/components/AmbientLayer';
+import TomePageFrame from '../src/components/TomePageFrame';
+import TomeTileFrame from '../src/components/TomeTileFrame';
 import { Theme, useTheme } from '../src/theme/colors';
 
 type GameDef = {
   id: string;
+  shortLabel: string;
   title: string;
-  subtitle: string;
   icon: string;
   available: boolean;
   route: string;
 };
 
 const GAMES: GameDef[] = [
-  {
-    id: 'mtg',
-    title: 'Magic: The Gathering',
-    subtitle: 'Deck manager & sleeve tracker',
-    icon: '⚔️',
-    available: true,
-    route: '/mtg',
-  },
-  {
-    id: 'poker',
-    title: "Texas Hold'em",
-    subtitle: 'Pick players, deal, advance phases',
-    icon: '♠️',
-    available: true,
-    route: '/holdem/setup',
-  },
-  {
-    id: 'cah',
-    title: 'Cards Against Humanity',
-    subtitle: 'Black card prompt, white card fills',
-    icon: '🃏',
-    available: true,
-    route: '/cah/setup',
-  },
-  {
-    id: 'dnd',
-    title: 'D&D Spell Cards',
-    subtitle: 'Deck builder & spell browser',
-    icon: '🔮',
-    available: true,
-    route: '/dnd',
-  },
+  { id: 'mtg',   shortLabel: 'MTG',     title: 'Magic: The Gathering',    icon: '⚔️', available: true, route: '/mtg' },
+  { id: 'poker', shortLabel: "Hold'em", title: "Texas Hold'em",           icon: '♠️', available: true, route: '/holdem/setup' },
+  { id: 'cah',   shortLabel: 'CAH',     title: 'Cards Against Humanity',  icon: '🃏', available: true, route: '/cah/setup' },
+  { id: 'dnd',   shortLabel: 'D&D',     title: 'D&D Spell Cards',         icon: '🔮', available: true, route: '/dnd' },
 ];
 
 type ResumeTarget =
@@ -70,18 +43,46 @@ type ResumeTarget =
   | { kind: 'cah'; game: CahGameState; ts: number }
   | { kind: 'cah_maxs'; game: CahMaxsGameState; ts: number };
 
+function EyeOfProvidence({ gold }: { gold: string }) {
+  return (
+    <Svg width={40} height={30} viewBox="0 0 40 30">
+      <Path d="M 16 4 L 24 4 L 20 0 Z" stroke={gold} strokeWidth="1" fill="none" />
+      <Path d="M 8 18 Q 20 8, 32 18 Q 20 26, 8 18 Z" stroke={gold} strokeWidth="1" fill="none" />
+      <Circle cx="20" cy="18" r="3" fill={gold} />
+      <Path d="M 8 12 L 4 8 M 14 8 L 12 2 M 26 8 L 28 2 M 32 12 L 36 8" stroke={gold} strokeWidth="0.8" />
+    </Svg>
+  );
+}
+
+function LozengeDivider({ gold, width }: { gold: string; width: number }) {
+  const cy = 6;
+  const cx = width / 2;
+  const half = 5;
+  const leftEnd = cx - half - 3;
+  const rightStart = cx + half + 3;
+  return (
+    <Svg width={width} height={12} viewBox={`0 0 ${width} 12`}>
+      <Path d={`M 8 ${cy} L ${leftEnd} ${cy}`} stroke={gold} strokeWidth="0.8" />
+      <Path d={`M ${cx} ${cy - half} L ${cx + half} ${cy} L ${cx} ${cy + half} L ${cx - half} ${cy} Z`} stroke={gold} strokeWidth="1" fill="none" />
+      <Path d={`M ${rightStart} ${cy} L ${width - 8} ${cy}`} stroke={gold} strokeWidth="0.8" />
+    </Svg>
+  );
+}
+
+function FleuronDivider({ gold }: { gold: string }) {
+  return (
+    <Svg width={44} height={6} viewBox="0 0 44 6">
+      <Path d="M 4 3 L 18 3" stroke={gold} strokeWidth="0.6" />
+      <Path d="M 22 0.5 L 24.5 3 L 22 5.5 L 19.5 3 Z" stroke={gold} strokeWidth="0.7" fill="none" />
+      <Path d="M 26 3 L 40 3" stroke={gold} strokeWidth="0.6" />
+    </Svg>
+  );
+}
+
 export default function GameSelectScreen() {
   const colors = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [resume, setResume] = useState<ResumeTarget | null>(null);
-  const [isFocused, setIsFocused] = useState(true);
-
-  useFocusEffect(
-    useCallback(() => {
-      setIsFocused(true);
-      return () => setIsFocused(false);
-    }, []),
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -95,19 +96,13 @@ export default function GameSelectScreen() {
             : null;
         }),
         loadHoldemGame().then(game =>
-          game
-            ? ({ kind: 'holdem', game, ts: game.startedAt } as ResumeTarget)
-            : null,
+          game ? ({ kind: 'holdem', game, ts: game.startedAt } as ResumeTarget) : null,
         ),
         loadCahGame().then(game =>
-          game
-            ? ({ kind: 'cah', game, ts: game.startedAt } as ResumeTarget)
-            : null,
+          game ? ({ kind: 'cah', game, ts: game.startedAt } as ResumeTarget) : null,
         ),
         loadMaxsGame().then(game =>
-          game
-            ? ({ kind: 'cah_maxs', game, ts: game.startedAt } as ResumeTarget)
-            : null,
+          game ? ({ kind: 'cah_maxs', game, ts: game.startedAt } as ResumeTarget) : null,
         ),
       ]).then(([mtg, holdem, cah, cahMaxs]) => {
         const candidates = [mtg, holdem, cah, cahMaxs].filter((c): c is ResumeTarget => c !== null);
@@ -136,42 +131,34 @@ export default function GameSelectScreen() {
             ? `CAH Max's — ${resume.game.playerCount} players`
             : null;
 
-  const renderGame = ({ item }: { item: GameDef }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.tile,
-        item.available ? styles.tileAvailable : styles.tileUnavailable,
-        pressed && item.available && styles.tilePressed,
-      ]}
-      onPress={() => {
-        console.log('[SLV] clearMemo called from game-select onPress');
-        clearMemo();
-        router.push(item.route as any);
-      }}
-    >
-      <Text style={styles.tileIcon}>{item.icon}</Text>
-      <Text style={[styles.tileTitle, !item.available && styles.tileTitleDim]}>
-        {item.title}
-      </Text>
-      <Text style={[styles.tileSubtitle, !item.available && styles.tileSubtitleDim]}>
-        {item.subtitle}
-      </Text>
-      {item.available && (
-        <View style={styles.tileArrow}>
-          <Text style={styles.tileArrowText}>›</Text>
-        </View>
-      )}
-      {!item.available && (
-        <View style={styles.comingSoonBadge}>
-          <Text style={styles.comingSoonText}>SOON</Text>
-        </View>
-      )}
-    </Pressable>
+  const TileButton = ({ game }: { game: GameDef }) => (
+    <View style={styles.tileWrap}>
+      <Pressable
+        onPress={() => { clearMemo(); router.push(game.route as any); }}
+        style={styles.tilePressable}
+      >
+        {({ pressed }) => (
+          <TomeTileFrame pressed={pressed && game.available}>
+            <Text style={[styles.tileIcon, !game.available && styles.tileDim]}>{game.icon}</Text>
+            <Text style={[styles.tileLabel, !game.available && styles.tileDim]}>
+              {game.shortLabel}
+            </Text>
+            <View style={styles.tileFleuron}>
+              <FleuronDivider gold={colors.accent.primary} />
+            </View>
+            {!game.available && (
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonText}>SOON</Text>
+              </View>
+            )}
+          </TomeTileFrame>
+        )}
+      </Pressable>
+    </View>
   );
 
   return (
-    <View style={styles.container}>
-      <AmbientLayer active={isFocused} />
+    <View style={styles.root}>
       <StatusBar barStyle="light-content" />
       <Pressable
         style={styles.settingsBtn}
@@ -180,138 +167,141 @@ export default function GameSelectScreen() {
       >
         <Text style={styles.settingsIcon}>⚙️</Text>
       </Pressable>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>The Arcanum</Text>
-        <Text style={styles.headerSubtitle}>Choose your game</Text>
-      </View>
-
-      {resume && resumeName && (
-        <Pressable style={styles.resumeBanner} onPress={handleResume}>
-          <View style={styles.resumeLeft}>
-            <Text style={styles.resumeLabel}>▶  RESUME</Text>
-            <Text style={styles.resumeName} numberOfLines={1}>{resumeName}</Text>
+      <TomePageFrame>
+        <View style={styles.titleBlock}>
+          <EyeOfProvidence gold={colors.accent.primary} />
+          <Text style={styles.title}>The Arcanum</Text>
+          <View style={styles.titleDivider}>
+            <LozengeDivider gold={colors.accent.primary} width={240} />
           </View>
-          <Text style={styles.resumeArrow}>›</Text>
-        </Pressable>
-      )}
+          <Text style={styles.subtitle}>DECK MANAGER</Text>
+        </View>
 
-      <FlatList
-        data={GAMES}
-        keyExtractor={g => g.id}
-        renderItem={renderGame}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-        columnWrapperStyle={styles.row}
-      />
+        {resume && resumeName && (
+          <Pressable style={styles.resumeBanner} onPress={handleResume}>
+            <View style={styles.resumeLeft}>
+              <Text style={styles.resumeLabel}>▶  RESUME</Text>
+              <Text style={styles.resumeName} numberOfLines={1}>{resumeName}</Text>
+            </View>
+            <Text style={styles.resumeArrow}>›</Text>
+          </Pressable>
+        )}
+
+        <View style={styles.grid}>
+          <View style={styles.tileRow}>
+            <TileButton game={GAMES[0]} />
+            <TileButton game={GAMES[1]} />
+          </View>
+          <View style={styles.tileRow}>
+            <TileButton game={GAMES[2]} />
+            <TileButton game={GAMES[3]} />
+          </View>
+        </View>
+      </TomePageFrame>
     </View>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-
-  header: {
-    paddingTop: 64,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: colors.accent.primary,
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    textShadowColor: colors.overlay.accent50,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  },
-  headerSubtitle: {
-    color: colors.text.secondary,
-    fontSize: 14,
-    marginTop: 4,
-    letterSpacing: 0.8,
-  },
+  root: { flex: 1, backgroundColor: 'transparent' },
 
   settingsBtn: {
     position: 'absolute',
-    top: 60,
-    right: 20,
+    top: 12,
+    right: 16,
     padding: 8,
     zIndex: 10,
   },
   settingsIcon: { fontSize: 22 },
 
+  titleBlock: {
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 18,
+  },
+  title: {
+    color: colors.text.ink,
+    fontFamily: 'serif',
+    fontSize: 36,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginTop: 8,
+  },
+  titleDivider: {
+    marginTop: 6,
+    marginBottom: 6,
+  },
+  subtitle: {
+    color: colors.text.inkSoft,
+    fontFamily: 'serif',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 4,
+  },
+
   resumeBanner: {
-    marginHorizontal: 16,
     marginBottom: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
+    paddingVertical: 12,
+    backgroundColor: colors.bg.parchmentDeep,
     borderWidth: 1,
     borderColor: colors.accent.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
   },
   resumeLeft: { flex: 1, gap: 3 },
-  resumeLabel: { color: colors.accent.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
-  resumeName: { color: colors.text.primary, fontSize: 15, fontWeight: '700' },
+  resumeLabel: { color: colors.accent.dark, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
+  resumeName: { color: colors.text.ink, fontFamily: 'serif', fontSize: 15, fontWeight: '700' },
   resumeArrow: { color: colors.accent.primary, fontSize: 28, marginLeft: 8 },
 
-  grid: { paddingHorizontal: 12, paddingBottom: 32 },
-  row: { gap: 12, marginBottom: 12 },
-
-  tile: {
+  grid: {
     flex: 1,
-    minHeight: 155,
-    borderRadius: 6,
-    padding: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 14,
   },
-  tileAvailable: {
-    backgroundColor: colors.bg.parchment,
-    borderColor: colors.accent.primary,
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+  tileRow: {
+    flexDirection: 'row',
+    gap: 14,
   },
-  tileUnavailable: {
-    backgroundColor: 'transparent',
-    borderColor: colors.divider,
+  tileWrap: {
+    flex: 1,
   },
-  tilePressed: {
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.bg.parchmentDeep,
+  tilePressable: {
+    flex: 1,
   },
 
-  tileIcon: { fontSize: 28 },
-  tileTitle: { color: colors.text.ink, fontSize: 14, fontWeight: '700', lineHeight: 18, marginTop: 10 },
-  tileTitleDim: { color: colors.text.muted },
-  tileSubtitle: { color: colors.text.inkSoft, fontSize: 11, marginTop: 4 },
-  tileSubtitleDim: { color: colors.text.muted },
-
-  tileArrow: { alignSelf: 'flex-end', marginTop: 8 },
-  tileArrowText: { color: colors.accent.primary, fontSize: 24 },
+  tileIcon: {
+    fontSize: 60,
+    lineHeight: 72,
+    textAlign: 'center',
+  },
+  tileLabel: {
+    color: colors.text.ink,
+    fontFamily: 'serif',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  tileFleuron: {
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  tileDim: {
+    opacity: 0.4,
+  },
 
   comingSoonBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 4,
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: colors.bg.parchment,
     borderWidth: 1,
     borderColor: colors.divider,
   },
-  comingSoonText: { color: colors.text.muted, fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+  comingSoonText: { color: colors.text.inkSoft, fontSize: 8, fontWeight: '700', letterSpacing: 1.2 },
 }); }

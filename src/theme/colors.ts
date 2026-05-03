@@ -35,7 +35,7 @@ export type Theme = {
 };
 
 const ARCANE_THEME: Theme = {
-  bg: { app: '#1A140E', surface: '#2B1F12', elevated: '#2B1F12', parchment: '#D9C9A8', parchmentDeep: '#B8A480' },
+  bg: { app: '#1A140E', surface: '#2B1F12', elevated: '#2B1F12', parchment: '#E5D4A8', parchmentDeep: '#C0A878' },
   text: { primary: '#E8DCC4', secondary: '#B8A989', muted: '#7A6E5A', disabled: '#5C523F', ink: '#1A140E', inkSoft: '#3D2E1C' },
   accent: { primary: '#C9A961', dark: '#8A7340' },
   border: '#C9A961',
