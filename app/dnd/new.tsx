@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -20,6 +18,9 @@ import { saveDeck } from '../../src/storage/dndStorage';
 import spellMeta from '../../src/assets/dnd/spells.json';
 import spellImages from '../../src/assets/dnd/spells/index';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button, Stepper, TextInput } from '../../src/components/parchment';
 
 interface SpellMeta {
   level: number;
@@ -91,94 +92,91 @@ export default function DndNewWizardScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.stepBadge}>Step {stepNumber} / {totalSteps}</Text>
-      <Text style={styles.title}>New D&amp;D Deck</Text>
+    <TomePageFrame>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.stepBadge}>Step {stepNumber} / {totalSteps}</Text>
+        <Text style={styles.title}>New D&amp;D Deck</Text>
 
-      {step === 1 && (
-        <Step1Class
-          value={className}
-          onSelect={c => { setClassName(c); advance(); }}
-        />
-      )}
+        {step === 1 && (
+          <Step1Class
+            value={className}
+            onSelect={c => { setClassName(c); advance(); }}
+          />
+        )}
 
-      {step === 2 && (
-        <Step2Level
-          value={level}
-          onChange={setLevel}
-          className={className!}
-        />
-      )}
+        {step === 2 && (
+          <Step2Level
+            value={level}
+            onChange={setLevel}
+            className={className!}
+          />
+        )}
 
-      {step === 3 && isPrepared && (
-        <Step3AbilityMod
-          value={abilityMod}
-          onChange={setAbilityMod}
-          className={className!}
-        />
-      )}
+        {step === 3 && isPrepared && (
+          <Step3AbilityMod
+            value={abilityMod}
+            onChange={setAbilityMod}
+            className={className!}
+          />
+        )}
 
-      {step === 4 && className && (
-        <Step4SpellBrowser
-          className={className}
-          level={level}
-          abilityMod={abilityMod}
-          isPrepared={isPrepared}
-          selected={selected}
-          onToggle={name => {
-            const next = new Set(selected);
-            if (next.has(name)) next.delete(name); else next.add(name);
-            setSelected(next);
-          }}
-          showAll={showAll}
-          onToggleShowAll={() => setShowAll(v => !v)}
-        />
-      )}
+        {step === 4 && className && (
+          <Step4SpellBrowser
+            className={className}
+            level={level}
+            abilityMod={abilityMod}
+            isPrepared={isPrepared}
+            selected={selected}
+            onToggle={name => {
+              const next = new Set(selected);
+              if (next.has(name)) next.delete(name); else next.add(name);
+              setSelected(next);
+            }}
+            showAll={showAll}
+            onToggleShowAll={() => setShowAll(v => !v)}
+          />
+        )}
 
-      {step === 5 && (
-        <Step5NameAndSave
-          value={deckName}
-          onChange={setDeckName}
-          selectedCount={selected.size}
-        />
-      )}
+        {step === 5 && (
+          <Step5NameAndSave
+            value={deckName}
+            onChange={setDeckName}
+            selectedCount={selected.size}
+          />
+        )}
+      </ScrollView>
 
       <View style={styles.navRow}>
         {step > 1 && (
-          <Pressable style={styles.backBtn} onPress={back} disabled={saving}>
-            <Text style={styles.backBtnLabel}>← Back</Text>
-          </Pressable>
+          <Button variant="secondary" onPress={back} disabled={saving}>← Back</Button>
         )}
         {step > 1 && step < 5 && (
-          <Pressable
-            style={[styles.nextBtn, !canAdvance(step, className, deckName) && styles.nextBtnDisabled]}
+          <Button
+            variant="primary"
             onPress={advance}
             disabled={!canAdvance(step, className, deckName)}
+            style={styles.navPrimary}
           >
-            <Text style={styles.nextBtnLabel}>Next →</Text>
-          </Pressable>
+            Next →
+          </Button>
         )}
         {step === 5 && (
-          <Pressable
-            style={[styles.saveBtn, (saving || !deckName.trim()) && styles.saveBtnDisabled]}
+          <Button
+            variant="primary"
             onPress={handleSave}
             disabled={saving || !deckName.trim()}
+            style={styles.navPrimary}
           >
-            {saving ? (
-              <ActivityIndicator color={colors.bg.app} />
-            ) : (
-              <Text style={styles.saveBtnLabel}>Save Deck</Text>
-            )}
-          </Pressable>
+            {saving ? 'Saving…' : 'Save Deck'}
+          </Button>
         )}
       </View>
-    </ScrollView>
+    </TomePageFrame>
   );
 }
 
 function canAdvance(step: number, className: DndClass | null, _deckName: string): boolean {
   if (step === 1) return className !== null;
-  // Steps 2, 3, 4 always allow advance (any level/mod/selection is valid).
   return true;
 }
 
@@ -188,18 +186,21 @@ function Step1Class({ value, onSelect }: { value: DndClass | null; onSelect: (c:
   const colors = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={styles.card}>
+    <View style={styles.stepBody}>
       <Text style={styles.label}>Class</Text>
       <View style={styles.chipRow}>
-        {DND_CLASSES.map(c => (
-          <Pressable
-            key={c}
-            style={[styles.chip, value === c && styles.chipActive]}
-            onPress={() => onSelect(c)}
-          >
-            <Text style={[styles.chipText, value === c && styles.chipTextActive]}>{c}</Text>
-          </Pressable>
-        ))}
+        {DND_CLASSES.map(c => {
+          const active = value === c;
+          return (
+            <Pressable
+              key={c}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => onSelect(c)}
+            >
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -214,24 +215,10 @@ function Step2Level({ value, onChange, className }: { value: number; onChange: (
   const cantrips = cantripsKnown(className, value);
   const spells = spellsKnownOrPrepared(className, value, 0);
   return (
-    <View style={styles.card}>
+    <View style={styles.stepBody}>
       <Text style={styles.label}>Character level</Text>
-      <View style={styles.stepper}>
-        <Pressable
-          style={[styles.stepBtn, value <= MIN_LEVEL && styles.stepBtnDisabled]}
-          onPress={() => onChange(Math.max(MIN_LEVEL, value - 1))}
-          disabled={value <= MIN_LEVEL}
-        >
-          <Text style={styles.stepLabel}>−</Text>
-        </Pressable>
-        <Text style={styles.countBig}>{value}</Text>
-        <Pressable
-          style={[styles.stepBtn, value >= MAX_LEVEL && styles.stepBtnDisabled]}
-          onPress={() => onChange(Math.min(MAX_LEVEL, value + 1))}
-          disabled={value >= MAX_LEVEL}
-        >
-          <Text style={styles.stepLabel}>+</Text>
-        </Pressable>
+      <View style={styles.stepperRow}>
+        <Stepper value={value} min={MIN_LEVEL} max={MAX_LEVEL} onChange={onChange} />
       </View>
       <Text style={styles.hint}>
         {className} · Max spell slot: {maxSlot === 0 ? 'none' : `level ${maxSlot}`}
@@ -252,24 +239,10 @@ function Step3AbilityMod({ value, onChange, className }: { value: number; onChan
     className === 'Cleric' || className === 'Druid' ? 'Wisdom' :
     'Charisma';
   return (
-    <View style={styles.card}>
+    <View style={styles.stepBody}>
       <Text style={styles.label}>{abilityName} modifier</Text>
-      <View style={styles.stepper}>
-        <Pressable
-          style={[styles.stepBtn, value <= MIN_MOD && styles.stepBtnDisabled]}
-          onPress={() => onChange(Math.max(MIN_MOD, value - 1))}
-          disabled={value <= MIN_MOD}
-        >
-          <Text style={styles.stepLabel}>−</Text>
-        </Pressable>
-        <Text style={styles.countBig}>+{value}</Text>
-        <Pressable
-          style={[styles.stepBtn, value >= MAX_MOD && styles.stepBtnDisabled]}
-          onPress={() => onChange(Math.min(MAX_MOD, value + 1))}
-          disabled={value >= MAX_MOD}
-        >
-          <Text style={styles.stepLabel}>+</Text>
-        </Pressable>
+      <View style={styles.stepperRow}>
+        <Stepper value={value} min={MIN_MOD} max={MAX_MOD} onChange={onChange} />
       </View>
       <Text style={styles.hint}>
         Prepared casters' spell count = character level + {abilityName.slice(0, 3)} mod
@@ -333,7 +306,7 @@ function Step4SpellBrowser({
   const showSpellCounter = spellsMeta.count > 0 || spellSelected > 0;
 
   return (
-    <View style={styles.card}>
+    <View style={styles.stepBody}>
       <Text style={styles.label}>Choose spells</Text>
 
       {/* Counters */}
@@ -414,12 +387,10 @@ function Step5NameAndSave({ value, onChange, selectedCount }: { value: string; o
   const colors = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={styles.card}>
+    <View style={styles.stepBody}>
       <Text style={styles.label}>Deck name</Text>
       <TextInput
-        style={styles.input}
         placeholder="e.g. Kelenna's Wizard 8"
-        placeholderTextColor={colors.text.muted}
         value={value}
         onChangeText={onChange}
         autoFocus
@@ -434,146 +405,154 @@ function Step5NameAndSave({ value, onChange, selectedCount }: { value: string; o
 // ── Styles ────────────────────────────────────────────────────────────────
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: 'transparent' },
-  container: { padding: 20, gap: 16, paddingBottom: 40 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16, gap: 16 },
 
   stepBadge: {
-    color: colors.accent.primary,
+    color: colors.accent.dark,
+    fontFamily: fonts.display,
     fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 1.5,
     alignSelf: 'center',
+    textTransform: 'uppercase',
   },
   title: {
-    color: colors.accent.primary,
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
     fontSize: 24,
-    fontWeight: '800',
     letterSpacing: 1,
     textAlign: 'center',
   },
 
-  card: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    padding: 16,
-    gap: 14,
-  },
-  label: { color: colors.text.secondary, fontSize: 13, letterSpacing: 0.6, fontWeight: '700' },
-  hint: { color: colors.text.muted, fontSize: 12, lineHeight: 16 },
+  stepBody: { gap: 12 },
 
+  label: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  hint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  // Step 1: class chip selector
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
   },
-  chipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  chipText: { color: colors.text.muted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: colors.accent.primary },
-
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 },
-  stepBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.accent.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
+  chipActive: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.dark,
   },
-  stepBtnDisabled: { opacity: 0.3 },
-  stepLabel: { color: colors.text.primary, fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  countBig: { color: colors.accent.primary, fontSize: 40, fontWeight: '800', minWidth: 72, textAlign: 'center' },
+  chipText: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+  },
+  chipTextActive: {
+    color: colors.bg.app,
+    fontFamily: fonts.displayBold,
+  },
 
+  // Step 2/3: stepper centered
+  stepperRow: { flexDirection: 'row', justifyContent: 'center', paddingVertical: 8 },
+
+  // Step 4: counters + filter toggle + level sections
   counterRow: { flexDirection: 'row', gap: 14, flexWrap: 'wrap' },
-  counterText: { color: colors.accent.primary, fontSize: 13, fontWeight: '700' },
+  counterText: {
+    color: colors.accent.dark,
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+  },
   counterTextOver: { color: colors.status.warning },
 
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: 'transparent',
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
   },
-  toggleText: { color: colors.text.secondary, fontSize: 12 },
-  toggleSwitch: { color: colors.accent.primary, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  toggleText: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+  toggleSwitch: {
+    color: colors.accent.dark,
+    fontFamily: fonts.display,
+    fontSize: 11,
+    letterSpacing: 1.5,
+  },
 
-  emptyMsg: { color: colors.text.muted, fontSize: 13, textAlign: 'center', padding: 16 },
+  emptyMsg: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 13,
+    textAlign: 'center',
+    padding: 16,
+  },
 
   levelSection: { gap: 6 },
   levelHeader: {
-    color: colors.accent.primary,
+    color: colors.text.ink,
+    fontFamily: fonts.display,
     fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginTop: 4,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 6,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
   },
   spellRow: {
     paddingHorizontal: 10,
     paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: 'transparent',
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: colors.bg.elevated,
+    borderColor: 'transparent',
   },
-  spellRowSelected: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  spellRowPressed: { backgroundColor: colors.bg.elevated },
+  spellRowSelected: {
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
+  },
+  spellRowPressed: { backgroundColor: colors.bg.parchmentDeep },
   spellRowBody: { gap: 2 },
-  spellName: { color: colors.text.primary, fontSize: 14, fontWeight: '600' },
-  spellNameSelected: { color: colors.accent.primary },
-  spellMeta: { color: colors.text.muted, fontSize: 11 },
-  noArtBadge: { color: colors.text.muted, fontSize: 11, fontWeight: '700' },
-
-  input: {
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    backgroundColor: 'transparent',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: colors.text.primary,
-    fontSize: 15,
+  spellName: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
+  spellNameSelected: { fontFamily: fonts.bodyBold },
+  spellMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+  },
+  noArtBadge: {
+    color: colors.status.warning,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
   },
 
-  navRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  backBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
+  navRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
   },
-  backBtnLabel: { color: colors.text.secondary, fontSize: 15, fontWeight: '700' },
-  nextBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextBtnDisabled: { opacity: 0.4 },
-  nextBtnLabel: { color: colors.bg.app, fontSize: 15, fontWeight: '800' },
-  saveBtn: {
-    flex: 1,
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnLabel: { color: colors.bg.app, fontSize: 16, fontWeight: '800', letterSpacing: 0.8 },
+  navPrimary: { flex: 1 },
 }); }
