@@ -83,7 +83,7 @@ export default function DeckPreviewScreen() {
     librarySleeveDepth: 1,
     devMode: false,
     piDebugAlerts: false,
-    theme: 'default',
+    theme: 'arcane',
   });
 
   const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');

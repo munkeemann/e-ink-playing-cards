@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,7 +11,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { configurePiDebug } from '../src/api/piServer';
 import { AppSettings } from '../src/types';
-import { Theme, ThemeName, useTheme, useThemeName, useSetThemeName } from '../src/theme/colors';
+import { Theme, useTheme } from '../src/theme/colors';
 
 const ZONE_OPTIONS: { id: string; label: string; note?: string }[] = [
   { id: 'LIB',   label: 'Library (top card)' },
@@ -22,15 +21,8 @@ const ZONE_OPTIONS: { id: string; label: string; note?: string }[] = [
   { id: 'EXL',   label: 'Exile',     note: 'virtual by default' },
 ];
 
-const THEME_OPTIONS: { id: ThemeName; label: string }[] = [
-  { id: 'default', label: 'Default' },
-  { id: 'slate',   label: 'Slate' },
-];
-
 export default function SettingsScreen() {
   const colors = useTheme();
-  const themeName = useThemeName();
-  const setThemeName = useSetThemeName();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [settings, setSettings] = useState<AppSettings>({
@@ -39,7 +31,7 @@ export default function SettingsScreen() {
     librarySleeveDepth: 1,
     devMode: false,
     piDebugAlerts: false,
-    theme: 'default',
+    theme: 'arcane',
   });
   useFocusEffect(
     useCallback(() => {
@@ -74,24 +66,8 @@ export default function SettingsScreen() {
     });
   };
 
-  const handlePickTheme = async (id: ThemeName) => {
-    if (id === themeName) return;
-    try {
-      await setThemeName(id);
-      // SAM1-82: keep the local settings mirror in sync with context, so a
-      // later handleSave doesn't clobber the just-persisted theme with the
-      // stale value from the on-focus loadSettings.
-      setSettings(prev => ({ ...prev, theme: id }));
-    } catch (e) {
-      Alert.alert('Theme error', e instanceof Error ? e.message : String(e));
-    }
-  };
-
   const handleSave = async () => {
-    // SAM1-82: themeName from context is the source of truth for theme;
-    // settings.theme can be stale if the user picked a theme since the
-    // useFocusEffect-driven load. Force the latest into the save.
-    await saveSettings({ ...settings, theme: themeName });
+    await saveSettings({ ...settings, theme: 'arcane' });
     configurePiDebug(settings.devMode && settings.piDebugAlerts);
     router.back();
   };
@@ -175,30 +151,6 @@ export default function SettingsScreen() {
             </View>
           ))}
         </View>
-
-        {/* Theme */}
-        <Text style={styles.sectionTitle}>Theme</Text>
-        <View style={styles.card}>
-          <View style={styles.themeRow}>
-            {THEME_OPTIONS.map(opt => {
-              const active = themeName === opt.id;
-              return (
-                <Pressable
-                  key={opt.id}
-                  style={[styles.themeChip, active && styles.themeChipActive]}
-                  onPress={() => handlePickTheme(opt.id)}
-                >
-                  <Text style={[styles.themeChipText, active && styles.themeChipTextActive]}>
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-        <Text style={styles.hint}>
-          Theme applies immediately on selection.
-        </Text>
 
         {/* Dev Mode */}
         <Text style={styles.sectionTitle}>Developer</Text>
@@ -323,29 +275,6 @@ function makeStyles(colors: Theme) {
     toggleInfo: { flex: 1 },
     toggleLabel: { color: colors.text.primary, fontSize: 15 },
     toggleNote: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
-
-    themeRow: {
-      flexDirection: 'row',
-      gap: 0,
-    },
-    themeChip: {
-      flex: 1,
-      paddingVertical: 14,
-      alignItems: 'center',
-      backgroundColor: colors.bg.surface,
-    },
-    themeChipActive: {
-      backgroundColor: colors.accent.dark,
-    },
-    themeChipText: {
-      color: colors.text.muted,
-      fontSize: 15,
-      fontWeight: '600',
-    },
-    themeChipTextActive: {
-      color: colors.accent.primary,
-      fontWeight: '800',
-    },
 
     saveBtn: {
       margin: 16,

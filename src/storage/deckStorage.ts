@@ -69,9 +69,9 @@ export async function loadSettings(): Promise<AppSettings> {
   const raw = await AsyncStorage.getItem(SETTINGS_KEY);
   if (!raw) return { ...DEFAULT_SETTINGS };
   const parsed = JSON.parse(raw) as Partial<AppSettings>;
-  const themeValid = parsed.theme === 'default' || parsed.theme === 'slate' || parsed.theme === 'arcane';
+  const themeValid = parsed.theme === 'arcane';
   if (parsed.theme && !themeValid) {
-    console.warn(`[settings] unknown theme "${parsed.theme}", falling back to default`);
+    console.warn(`[settings] legacy theme "${parsed.theme}" coerced to arcane`);
   }
   return {
     sleeveCount: parsed.sleeveCount ?? DEFAULT_SETTINGS.sleeveCount,
@@ -79,7 +79,7 @@ export async function loadSettings(): Promise<AppSettings> {
     librarySleeveDepth: parsed.librarySleeveDepth ?? DEFAULT_SETTINGS.librarySleeveDepth,
     devMode: parsed.devMode ?? DEFAULT_SETTINGS.devMode,
     piDebugAlerts: parsed.piDebugAlerts ?? DEFAULT_SETTINGS.piDebugAlerts,
-    theme: themeValid ? parsed.theme as 'default' | 'slate' | 'arcane' : DEFAULT_SETTINGS.theme,
+    theme: themeValid ? 'arcane' : DEFAULT_SETTINGS.theme,
   };
 }
 

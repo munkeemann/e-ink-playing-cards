@@ -1,13 +1,13 @@
 /**
- * Shared UI palette for E-Cards. Two themes today: 'default' (cyan/teal,
- * SAM1-78) and 'slate' (cream-on-slate, SAM1-79). Theme name is part of
- * AppSettings (see src/storage/deckStorage.ts).
+ * Shared UI palette for E-Cards. The app is locked to the ARCANE theme
+ * (gold-on-walnut). Legacy stored values ('default', 'slate') are coerced
+ * to 'arcane' by the loadSettings validator.
  *
- * Reactivity (SAM1-79 Option A): consumers read the active theme via
- * useTheme(), and wrap their StyleSheet.create call in
- * useMemo(() => StyleSheet.create({...}), [colors]) so styles re-evaluate
- * when the theme changes. ThemeProvider wraps the app in app/_layout.tsx
- * and broadcasts updates to all consumers.
+ * Consumers read the active theme via useTheme() and wrap their
+ * StyleSheet.create call in useMemo(() => StyleSheet.create({...}),
+ * [colors]). ThemeProvider wraps the app in app/_layout.tsx; with a
+ * single theme it's effectively a constant provider, but the hook
+ * surface is preserved for future theming flexibility.
  *
  * MTG game-state colors (zones) live in src/mtg/zoneColors.ts; mana
  * letters (W/U/B/R/G) live inline in the in-game screen as game data.
@@ -16,7 +16,7 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState 
 import type { ReactNode } from 'react';
 import { loadSettings, saveSettings } from '../storage/deckStorage';
 
-export type ThemeName = 'default' | 'slate' | 'arcane';
+export type ThemeName = 'arcane';
 
 export type Theme = {
   bg: { app: string; surface: string; elevated: string };
@@ -32,38 +32,6 @@ export type Theme = {
     darker: string;
     light: string;
   };
-};
-
-const DEFAULT_THEME: Theme = {
-  bg: { app: '#060c14', surface: '#071a2a', elevated: '#0c2340' },
-  text: { primary: '#e0f7ff', secondary: '#64b5c8', muted: '#3a6070', disabled: '#444' },
-  accent: { primary: '#22d3ee', dark: '#0e7490' },
-  border: '#3a6070',
-  divider: '#1a2535',
-  status: { warning: '#f59e0b', danger: '#f87171', success: '#6ee7b7' },
-  overlay: {
-    accent40: 'rgba(34,211,238,0.4)',
-    accent50: 'rgba(34,211,238,0.5)',
-    dark: 'rgba(0,0,0,0.6)',
-    darker: 'rgba(0,0,0,0.92)',
-    light: 'rgba(255,255,255,0.12)',
-  },
-};
-
-const SLATE_THEME: Theme = {
-  bg: { app: '#2E343A', surface: '#3A4047', elevated: '#454C54' },
-  text: { primary: '#E8DDC9', secondary: '#C4B89F', muted: '#9DA5AE', disabled: '#5A626C' },
-  accent: { primary: '#E8DDC9', dark: '#C4B89F' },
-  border: '#5A626C',
-  divider: '#444B53',
-  status: { warning: '#f59e0b', danger: '#C97468', success: '#7B9D7E' },
-  overlay: {
-    accent40: 'rgba(232,221,201,0.4)',
-    accent50: 'rgba(232,221,201,0.5)',
-    dark: 'rgba(31,36,41,0.6)',
-    darker: 'rgba(31,36,41,0.92)',
-    light: 'rgba(255,255,255,0.12)',
-  },
 };
 
 const ARCANE_THEME: Theme = {
@@ -83,8 +51,6 @@ const ARCANE_THEME: Theme = {
 };
 
 export const THEMES: Record<ThemeName, Theme> = {
-  default: DEFAULT_THEME,
-  slate: SLATE_THEME,
   arcane: ARCANE_THEME,
 };
 
@@ -95,13 +61,13 @@ type ThemeCtx = {
 };
 
 const ThemeContext = createContext<ThemeCtx>({
-  theme: DEFAULT_THEME,
-  themeName: 'default',
+  theme: ARCANE_THEME,
+  themeName: 'arcane',
   setThemeName: async () => {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeName, setThemeNameState] = useState<ThemeName>('default');
+  const [themeName, setThemeNameState] = useState<ThemeName>('arcane');
 
   useEffect(() => {
     loadSettings().then(s => {
@@ -140,10 +106,8 @@ export function useSetThemeName(): (n: ThemeName) => Promise<void> {
 
 /**
  * Backward-compatibility alias for code that still does
- * `import { colors } from '.../theme/colors'`. Returns the DEFAULT theme.
- * New code should call useTheme() to get the active theme. This export
- * exists only so non-React-component code (helper functions outside the
- * component tree) can keep working — it does not respect the user's
- * theme selection. All UI surfaces must use useTheme().
+ * `import { colors } from '.../theme/colors'`. Now that the app is locked
+ * to ARCANE, this is equivalent to useTheme() but accessible to
+ * non-React-component code (helpers outside the component tree).
  */
-export const colors = DEFAULT_THEME;
+export const colors = ARCANE_THEME;

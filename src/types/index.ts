@@ -86,6 +86,6 @@ export interface AppSettings {
   devMode: boolean;
   /** Show blocking debug alerts from Pi network calls (only active when devMode is true) */
   piDebugAlerts: boolean;
-  /** UI theme: 'default' (cyan/teal), 'slate' (cream-on-slate), or 'arcane' (gold-on-walnut). */
-  theme: 'default' | 'slate' | 'arcane';
+  /** UI theme: locked to 'arcane' (gold-on-walnut). Legacy stored values are coerced on load. */
+  theme: 'arcane';
 }

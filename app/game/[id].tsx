@@ -133,7 +133,7 @@ export default function InGameScreen() {
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState('');
   const [connectedSleeves, setConnectedSleeves] = useState<number[] | null>(null);
-  const [settings, setSettings] = useState<AppSettings>({ sleeveCount: 5, physicalZones: ['LIB', 'HND', 'BTFLD'], librarySleeveDepth: 1, devMode: false, piDebugAlerts: false, theme: 'default' });
+  const [settings, setSettings] = useState<AppSettings>({ sleeveCount: 5, physicalZones: ['LIB', 'HND', 'BTFLD'], librarySleeveDepth: 1, devMode: false, piDebugAlerts: false, theme: 'arcane' });
 
   const [activeZone, setActiveZone] = useState<Zone | null>(null);
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
