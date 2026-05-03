@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo} from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { createGame, allSleeveUpdates } from '../../src/holdem/HoldemGame';
 import { saveHoldemGame } from '../../src/storage/holdemStorage';
@@ -9,8 +9,12 @@ import { getRegisteredSleeves } from '../../src/api/piServer';
 import { totalSleeveCount } from '../../src/holdem/HoldemSleeveLayout';
 import { SKIN_NAMES } from '../../src/assets/skins/registry';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button, ChipButton, Stepper } from '../../src/components/parchment';
 
 const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 10;
 
 export default function HoldemSetupScreen() {
   const colors = useTheme();
@@ -61,139 +65,102 @@ export default function HoldemSetupScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Texas Hold'em</Text>
+    <TomePageFrame>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Texas Hold'em</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.label}>Number of players</Text>
-        <View style={styles.stepper}>
-          <Pressable
-            style={[styles.stepBtn, playerCount <= MIN_PLAYERS && styles.stepBtnDisabled]}
-            onPress={() => setPlayerCount(p => Math.max(MIN_PLAYERS, p - 1))}
-            disabled={playerCount <= MIN_PLAYERS}
-          >
-            <Text style={styles.stepLabel}>−</Text>
-          </Pressable>
-          <Text style={styles.count}>{playerCount}</Text>
-          <Pressable style={styles.stepBtn} onPress={() => setPlayerCount(p => p + 1)}>
-            <Text style={styles.stepLabel}>+</Text>
-          </Pressable>
-        </View>
-        <Text style={styles.hint}>
-          {totalSleeveCount(playerCount)} sleeves required
-          ({playerCount * 2} hole · 5 community)
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.label}>Card Skin</Text>
-        <View style={styles.skinRow}>
-          {SKIN_NAMES.map(skin => (
-            <Pressable
-              key={skin}
-              style={[styles.skinChip, cardSkin === skin && styles.skinChipActive]}
-              onPress={() => setCardSkin(skin)}
-            >
-              <Text style={[
-                styles.skinChipText,
-                skin === skin.toUpperCase() && styles.skinChipTextUppercase,
-                cardSkin === skin && styles.skinChipTextActive,
-              ]}>
-                {skin}
+        <View style={styles.section}>
+          <View style={styles.stepperRow}>
+            <View style={styles.stepperLabelCol}>
+              <Text style={styles.stepperLabel}>Players</Text>
+              <Text style={styles.stepperHint}>
+                {totalSleeveCount(playerCount)} sleeves required ({playerCount * 2} hole · 5 community)
               </Text>
-            </Pressable>
-          ))}
+            </View>
+            <Stepper
+              value={playerCount}
+              min={MIN_PLAYERS}
+              max={MAX_PLAYERS}
+              onChange={setPlayerCount}
+            />
+          </View>
         </View>
-      </View>
 
-      <Pressable
-        style={[styles.startBtn, loading && styles.startBtnDisabled]}
-        onPress={handleStart}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.bg.app} />
-        ) : (
-          <Text style={styles.startLabel}>Start Game</Text>
-        )}
-      </Pressable>
-    </ScrollView>
+        <View style={styles.skinSection}>
+          <Text style={styles.skinLabel}>Card Skin</Text>
+          <View style={styles.skinChipRow}>
+            {SKIN_NAMES.map(skin => (
+              <ChipButton
+                key={skin}
+                label={skin}
+                active={cardSkin === skin}
+                onPress={() => setCardSkin(skin)}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.startBtnWrap}>
+        <Button variant="primary" onPress={handleStart} disabled={loading}>
+          {loading ? 'Starting…' : 'Start Game'}
+        </Button>
+      </View>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: 'transparent' },
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 40,
-    gap: 24,
-  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16, gap: 16 },
+
   title: {
-    color: colors.accent.primary,
-    fontSize: 26,
-    fontWeight: '800',
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+
+  section: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.text.inkSoft,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  stepperLabelCol: { flex: 1, marginRight: 12, gap: 2 },
+  stepperLabel: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
+  stepperHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+  },
+
+  skinSection: { gap: 8 },
+  skinLabel: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    textTransform: 'uppercase',
     letterSpacing: 1.5,
-    textShadowColor: colors.overlay.accent40,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+  },
+  skinChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
 
-  card: {
-    width: '100%',
-    backgroundColor: colors.bg.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    gap: 16,
-  },
-  label: { color: colors.text.secondary, fontSize: 14, letterSpacing: 0.6 },
-
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 24 },
-  stepBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.accent.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBtnDisabled: { opacity: 0.3 },
-  stepLabel: { color: colors.text.primary, fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  count: { color: colors.accent.primary, fontSize: 40, fontWeight: '800', minWidth: 48, textAlign: 'center' },
-  hint: { color: colors.text.muted, fontSize: 12, letterSpacing: 0.4 },
-
-  startBtn: {
-    width: '100%',
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  startBtnDisabled: { opacity: 0.5 },
-  startLabel: { color: colors.bg.app, fontSize: 16, fontWeight: '800', letterSpacing: 0.8 },
-
-  skinRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  skinChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-  },
-  skinChipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  skinChipText: { color: colors.text.muted, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
-  skinChipTextUppercase: { textTransform: 'none' },
-  skinChipTextActive: { color: colors.accent.primary },
+  startBtnWrap: { marginTop: 8 },
 }); }

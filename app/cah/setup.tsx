@@ -30,7 +30,7 @@ import { getPromptsForPacks, getResponsesForPacks } from '../../src/cah/CahConte
 import { Theme, useTheme } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import TomePageFrame from '../../src/components/TomePageFrame';
-import { Button, Stepper } from '../../src/components/parchment';
+import { Button, ChipButton, Stepper } from '../../src/components/parchment';
 
 type Ruleset = 'official' | 'maxs';
 
@@ -44,77 +44,6 @@ const MAXS_MAX_PLAYERS = 8;
 const MAXS_MIN_K = 1;
 const MAXS_MAX_K = 10;
 const REGISTERED_POLL_MS = 3000;
-
-/**
- * Inline ChipButton for ruleset + pack selection. parchmentDeep fill + 1px
- * gold border by default; on press / active, fills with accent.primary
- * (gold leaf) and label color flips to bg.app (dark walnut). Same idiom
- * as the gold Save button — stays consistent across the parchment palette.
- *
- * Inline-scoped per the rollout spec; promote to parchment library if a
- * second screen demonstrates the same chip pattern.
- */
-function ChipButton({
-  label,
-  active,
-  onPress,
-  badge,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  badge?: string | null;
-}) {
-  const colors = useTheme();
-  const styles = useMemo(() => makeChipStyles(colors), [colors]);
-  return (
-    <Pressable
-      style={[styles.chip, active && styles.chipActive]}
-      onPress={onPress}
-    >
-      <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
-      {badge ? (
-        <Text style={[styles.chipBadge, active && styles.chipBadgeActive]}>{badge}</Text>
-      ) : null}
-    </Pressable>
-  );
-}
-
-function makeChipStyles(colors: Theme) { return StyleSheet.create({
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.accent.primary,
-    backgroundColor: colors.bg.parchmentDeep,
-    alignItems: 'center',
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.dark,
-  },
-  chipLabel: {
-    color: colors.text.ink,
-    fontFamily: fonts.display,
-    fontSize: 13,
-  },
-  chipLabelActive: {
-    color: colors.bg.app,
-    fontFamily: fonts.displayBold,
-  },
-  chipBadge: {
-    color: colors.text.inkSoft,
-    fontFamily: fonts.bodyItalic,
-    fontSize: 10,
-    marginTop: 2,
-  },
-  chipBadgeActive: {
-    color: colors.bg.app,
-  },
-}); }
 
 function packBadgeText(chip: PackChip): string | null {
   if (chip.promptCount === 0 && chip.responseCount > 0) return 'responses only';
