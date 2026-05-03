@@ -19,6 +19,9 @@ import { fetchPrintings, ScryfallPrinting } from '../../src/api/scryfall';
 import { getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
 import { AppSettings, CardInstance, Deck, TokenTemplate } from '../../src/types';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button } from '../../src/components/parchment';
 
 function ArtPopupContent({ card }: { card: CardInstance | null }) {
   console.log('[ArtPopup] imagePath:', card?.imagePath);
@@ -108,13 +111,14 @@ export default function DeckPreviewScreen() {
 
   if (!deck) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent.primary} />
-      </View>
+      <TomePageFrame>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.accent.primary} />
+        </View>
+      </TomePageFrame>
     );
   }
 
-  // SAM1-69: partner decks have two commanders; preserve their order in the cards array.
   const commanders = deck.cards.filter(c => c.place === 'commander');
   const commander = commanders[0];
   const library = settings.devMode
@@ -133,19 +137,12 @@ export default function DeckPreviewScreen() {
     setSending(true);
     setSendProgress({ sent: 0, total: 0 });
     try {
-      // Reset all cards: non-commanders back to LIB, commander to CMD with castCount=0.
-      // Tokens (isToken: true) are discarded entirely on reset.
-      // SAM1-69: when partner commanders land, reset each commander's castCount independently.
       const resetCards = deck.cards
         .filter(c => !c.isToken)
         .map(c => c.place === 'commander'
           ? { ...c, zone: 'CMD' as const, castCount: 0 }
           : { ...c, zone: 'LIB' as const });
 
-      // Shuffle LIB and deal a 7-card opening hand into HND.
-      // The mulligan sheet (shown by game/[id].tsx on freshStart=true)
-      // lets the user mulligan or keep these 7 cards. Dealing here gives
-      // assignSleeveIds real HND cards to prioritize over library preview.
       const libCards = resetCards.filter(c => c.zone === 'LIB');
       const nonLibCards = resetCards.filter(c => c.zone !== 'LIB');
       const shuffled = shuffle(libCards);
@@ -156,7 +153,6 @@ export default function DeckPreviewScreen() {
         .map((c, i) => ({ ...c, place: String(i + 1) }));
       const unsleevedCards = [...nonLibCards, ...openingHand, ...remainingLib];
 
-      // Assign permanent sleeveIds based on settings
       const settings = await loadSettings();
       const newCards = assignSleeveIds(unsleevedCards, settings);
 
@@ -167,8 +163,6 @@ export default function DeckPreviewScreen() {
       const sleeves = await getRegisteredSleeves();
       clearMemo();
       await beginGame(newCards, sleeves, (sent, total) => setSendProgress({ sent, total }), undefined, settings);
-      // SAM1-68: park each commander sleeve's strip on the CMD cell at game start.
-      // SAM1-69: partner decks have multiple commander sleeves to park.
       for (const cmdr of newCards.filter(c => c.place === 'commander')) {
         if (cmdr.sleeveId !== null) pushZoneUpdateViaPi(cmdr.sleeveId, 'CMD').catch(() => {});
       }
@@ -258,7 +252,6 @@ export default function DeckPreviewScreen() {
           onPress: async () => {
             const updatedCards = deck.cards.map(c => {
               if (c.baseName !== pickerCard.baseName) return c;
-              // Only update cards sharing the same current printing
               if (c.setCode !== pickerCard.setCode || c.collectorNumber !== pickerCard.collectorNumber) return c;
               return {
                 ...c,
@@ -279,7 +272,6 @@ export default function DeckPreviewScreen() {
     );
   };
 
-  // Plain computation (deck is guaranteed non-null here, after the early return above)
   const uniqueGalleryCards: CardInstance[] = (() => {
     const allCards = [...(commander ? [commander] : []), ...library];
     const seen = new Set<string>();
@@ -295,7 +287,7 @@ export default function DeckPreviewScreen() {
 
   const renderCard = ({ item }: { item: CardInstance }) => (
     <Pressable
-      style={styles.cardRow}
+      style={({ pressed }) => [styles.cardRow, pressed && styles.cardRowPressed]}
       onPress={() => openPrintingPicker(item)}
       onLongPress={() => setArtPopupCard(item)}
     >
@@ -313,7 +305,7 @@ export default function DeckPreviewScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <TomePageFrame>
       <View style={styles.header}>
         {deck.commanderImagePath ? (
           <Image
@@ -325,7 +317,7 @@ export default function DeckPreviewScreen() {
           <View style={[styles.headerArt, styles.headerArtPlaceholder]} />
         )}
         <View style={styles.headerInfo}>
-          <Text style={styles.deckTitle}>{deck.name}</Text>
+          <Text style={styles.deckTitle} numberOfLines={2}>{deck.name}</Text>
           {commanders.map(cmdr => (
             <Text key={cmdr.displayName} style={styles.commanderName}>{cmdr.displayName}</Text>
           ))}
@@ -336,7 +328,6 @@ export default function DeckPreviewScreen() {
           {commanders.length === 2 && !gameInProgress && (
             <Pressable
               onPress={async () => {
-                // SAM1-69: swap partner order so the second commander becomes the primary (sleeve 1).
                 const [a, b] = commanders;
                 const newCards = deck.cards.map(c => {
                   if (c === a) return b;
@@ -377,7 +368,6 @@ export default function DeckPreviewScreen() {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {viewMode === 'list' ? (
-          /* Card list */
           <FlatList
             key="list"
             data={[...commanders, ...library]}
@@ -386,7 +376,6 @@ export default function DeckPreviewScreen() {
             scrollEnabled={false}
           />
         ) : (
-          /* Gallery — unique cards in a 2-column grid */
           <FlatList
             key="gallery"
             data={uniqueGalleryCards}
@@ -448,20 +437,20 @@ export default function DeckPreviewScreen() {
         </View>
       ) : gameInProgress ? (
         <View style={styles.bottomActions}>
-          <Pressable style={styles.resumeBtn} onPress={() => router.push(`/game/${deck.id}`)}>
-            <Text style={styles.resumeBtnText}>▶ Resume Game</Text>
-          </Pressable>
-          <Pressable style={styles.beginBtn} onPress={handleBeginGame}>
-            <Text style={styles.beginBtnText}>⚡ Begin New Game</Text>
-          </Pressable>
+          <Button variant="secondary" onPress={() => router.push(`/game/${deck.id}`)} style={styles.actionBtn}>
+            ▶ Resume Game
+          </Button>
+          <Button variant="primary" onPress={handleBeginGame} style={styles.actionBtn}>
+            ⚡ Begin New Game
+          </Button>
         </View>
       ) : (
-        <Pressable style={[styles.beginBtn, styles.beginBtnFull]} onPress={handleBeginGame}>
-          <Text style={styles.beginBtnText}>⚡ Begin Game</Text>
-        </Pressable>
+        <View style={styles.bottomActionFull}>
+          <Button variant="primary" onPress={handleBeginGame}>⚡ Begin Game</Button>
+        </View>
       )}
 
-      {/* Add Token Template modal */}
+      {/* Add Token Template modal — leather sheet, kept by design */}
       <Modal
         visible={addTokenVisible}
         transparent
@@ -534,14 +523,14 @@ export default function DeckPreviewScreen() {
         </Pressable>
       </Modal>
 
-      {/* Card art popup (long press) */}
+      {/* Card art popup (long press) — full-bleed by design (card showcase, not UI surface) */}
       <Modal visible={artPopupCard !== null} transparent animationType="fade" onRequestClose={() => setArtPopupCard(null)}>
         <Pressable style={styles.artBackdrop} onPress={() => setArtPopupCard(null)}>
           <ArtPopupContent card={artPopupCard} />
         </Pressable>
       </Modal>
 
-      {/* Printing picker sheet */}
+      {/* Printing picker sheet — leather sheet, kept by design */}
       <Modal
         visible={pickerCard !== null}
         transparent
@@ -634,132 +623,262 @@ export default function DeckPreviewScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // Header — sits transparently on parchment, commander art floats with text alongside.
   header: {
     flexDirection: 'row',
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: 1,
-    borderColor: colors.text.muted,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
+    gap: 12,
   },
-  headerArt: { width: 90, height: 124 },
-  headerArtPlaceholder: { backgroundColor: colors.bg.surface },
-  headerInfo: { flex: 1, padding: 14, justifyContent: 'center', gap: 4 },
-  deckTitle: { color: colors.accent.primary, fontSize: 20, fontWeight: '800' },
-  commanderName: { color: colors.text.secondary, fontSize: 13 },
+  headerArt: {
+    width: 80,
+    height: 110,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+  },
+  headerArtPlaceholder: { backgroundColor: colors.bg.parchmentDeep },
+  headerInfo: { flex: 1, justifyContent: 'center', gap: 4 },
+  deckTitle: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 20,
+  },
+  commanderName: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 13,
+  },
   swapPartnersBtn: {
-    marginTop: 8,
+    marginTop: 6,
     alignSelf: 'flex-start',
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: colors.text.muted,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
   },
-  swapPartnersBtnText: { color: colors.accent.primary, fontSize: 11, fontWeight: '700' },
-  deckMeta: { color: colors.text.muted, fontSize: 12 },
-  devModeLabel: { color: colors.text.muted, fontSize: 11, marginTop: 2 },
+  swapPartnersBtnText: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 11,
+  },
+  deckMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+  devModeLabel: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+    marginTop: 2,
+  },
   devModeLabelActive: { color: colors.status.warning },
 
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 16 },
+  scrollContent: { paddingBottom: 12 },
 
+  // Card list rows
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 9,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.bg.surface,
+    borderBottomColor: colors.text.inkSoft,
   },
+  cardRowPressed: { backgroundColor: colors.bg.parchmentDeep },
   cardIndex: {
     width: 30,
-    color: colors.text.muted,
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
     fontSize: 12,
     textAlign: 'right',
     marginRight: 12,
   },
   cardNameRow: { flex: 1, gap: 2 },
-  cardName: { color: colors.text.primary, fontSize: 15 },
-  cardSetBadge: { color: colors.text.muted, fontSize: 11 },
-  cardPickArrow: { color: colors.text.muted, fontSize: 18, marginLeft: 6 },
+  cardName: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
+  cardSetBadge: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+  },
+  cardPickArrow: {
+    color: colors.accent.primary,
+    fontSize: 18,
+    marginLeft: 6,
+  },
 
+  // Section header (Token Library)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingTop: 20,
     paddingBottom: 10,
-    borderTopWidth: 1,
-    borderColor: colors.text.muted,
     marginTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.text.inkSoft,
   },
-  sectionTitle: { color: colors.accent.primary, fontSize: 14, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
+  sectionTitle: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
   addTokenBtn: {
-    backgroundColor: colors.accent.dark,
-    borderRadius: 6,
+    backgroundColor: colors.accent.primary,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.dark,
     paddingVertical: 5,
     paddingHorizontal: 12,
   },
-  addTokenBtnText: { color: colors.accent.primary, fontSize: 13, fontWeight: '700' },
-  emptyText: { color: colors.text.muted, fontSize: 13, paddingHorizontal: 16, paddingBottom: 12, lineHeight: 20 },
+  addTokenBtnText: {
+    color: colors.bg.app,
+    fontFamily: fonts.display,
+    fontSize: 13,
+  },
+  emptyText: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 13,
+    paddingHorizontal: 8,
+    paddingBottom: 12,
+    lineHeight: 20,
+  },
   tokenRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.bg.surface,
+    borderBottomColor: colors.text.inkSoft,
   },
   tokenInfo: { flex: 1 },
-  tokenName: { color: colors.text.primary, fontSize: 15 },
-  tokenMeta: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
+  tokenName: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
+  tokenMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    marginTop: 2,
+  },
   deleteBtn: { padding: 8 },
   deleteBtnText: { color: colors.status.danger, fontSize: 16 },
 
+  // Sending status bar (transient)
   sendingBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    padding: 18,
-    backgroundColor: colors.bg.surface,
+    padding: 14,
+    backgroundColor: colors.bg.parchmentDeep,
     borderTopWidth: 1,
-    borderColor: colors.text.muted,
+    borderTopColor: colors.accent.primary,
+    marginTop: 8,
   },
-  sendingText: { color: colors.text.secondary, fontSize: 14 },
+  sendingText: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
+
+  // Bottom actions
   bottomActions: {
     flexDirection: 'row',
     gap: 10,
-    margin: 16,
+    marginTop: 8,
   },
-  resumeBtn: {
+  bottomActionFull: { marginTop: 8 },
+  actionBtn: { flex: 1 },
+
+  // ── Gallery ──────────────────────────────────────────────────────────────
+  galleryGrid: { padding: 4 },
+  galleryTile: {
     flex: 1,
-    borderWidth: 1.5,
+    margin: 4,
+    alignItems: 'center',
+  },
+  galleryArt: {
+    width: '100%',
+    aspectRatio: 0.72,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+  },
+  galleryArtPlaceholder: { backgroundColor: colors.bg.parchmentDeep },
+  galleryName: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+
+  // ── View toggle ──────────────────────────────────────────────────────────
+  viewToggleBar: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
+  },
+  viewToggleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
+  },
+  viewToggleBtnActive: {
+    backgroundColor: colors.accent.primary,
     borderColor: colors.accent.dark,
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
   },
-  resumeBtnText: { color: colors.accent.primary, fontSize: 16, fontWeight: '700' },
-  beginBtn: {
+  viewToggleBtnText: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 14,
+  },
+  viewToggleBtnTextActive: {
+    color: colors.bg.app,
+    fontFamily: fonts.displayBold,
+  },
+
+  // ── Modals (kept leather by design) ──────────────────────────────────────
+  // ArtPopup uses artBackdrop → full-bleed dark overlay so card art shows
+  // edge-to-edge without parchment cropping. The two bottom-sheet modals
+  // (Add Token, Printing Picker) use leather sheet styling; their content
+  // is form/UI, not parchment surface, so leather reads as a separate layer.
+  artBackdrop: {
     flex: 1,
-    backgroundColor: colors.accent.dark,
-    borderRadius: 10,
-    paddingVertical: 16,
+    backgroundColor: colors.overlay.darker,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  beginBtnFull: {
-    flex: 0,
-    margin: 16,
-  },
-  beginBtnText: { color: colors.accent.primary, fontSize: 18, fontWeight: '800' },
 
   sheetBackdrop: { flex: 1, backgroundColor: colors.overlay.dark, justifyContent: 'flex-end' },
   sheet: {
@@ -820,40 +939,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   colorBtnLabel: { color: colors.text.muted, fontSize: 11, fontWeight: '800' },
   colorBtnLabelActive: { color: colors.accent.primary },
 
-  viewToggleBar: {
-    flexDirection: 'row',
-    padding: 8,
-    gap: 8,
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: 1,
-    borderColor: colors.text.muted,
-  },
-  viewToggleBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.text.muted,
-  },
-  viewToggleBtnActive: { backgroundColor: colors.accent.dark, borderColor: colors.accent.dark },
-  viewToggleBtnText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
-  viewToggleBtnTextActive: { color: colors.accent.primary },
-
-  galleryGrid: { padding: 4 },
-  galleryTile: {
-    flex: 1,
-    margin: 4,
-    alignItems: 'center',
-  },
-  galleryArt: { width: '100%', aspectRatio: 0.72, borderRadius: 8 },
-  galleryArtPlaceholder: { backgroundColor: colors.text.muted },
-  galleryName: { color: colors.text.primary, fontSize: 12, textAlign: 'center', marginTop: 4, paddingHorizontal: 4 },
-
-  artBackdrop: { flex: 1, backgroundColor: colors.overlay.darker, alignItems: 'center', justifyContent: 'center' },
-  artFull: { width: '90%', height: '80%' },
-
-  // ── Printing picker ────────────────────────────────────────────────────────
+  // Printing picker sheet (kept leather)
   pickerSheet: {
     backgroundColor: 'transparent',
     borderTopLeftRadius: 20,
