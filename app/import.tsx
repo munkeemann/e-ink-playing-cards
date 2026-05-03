@@ -1,14 +1,12 @@
-import { useState, useMemo} from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -16,6 +14,9 @@ import { fetchCardByPrinting, fetchCards, fetchTokenImage } from '../src/api/scr
 import { saveDeck } from '../src/storage/deckStorage';
 import { CardInstance, Deck, TokenTemplate } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
+import TomePageFrame from '../src/components/TomePageFrame';
+import { Button, TextInput } from '../src/components/parchment';
 
 interface DeckEntry {
   name: string;
@@ -97,7 +98,6 @@ export default function ImportDeckScreen() {
       libraryEntries = entries.filter(e => !e.isCommander);
     }
 
-    // Expand each DeckEntry into per-slot entries so we can track printing per card
     const librarySlots: DeckEntry[] = [];
     for (const e of libraryEntries) {
       for (let i = 0; i < e.count; i++) librarySlots.push(e);
@@ -107,7 +107,6 @@ export default function ImportDeckScreen() {
       ...new Set([...commanderEntries.map(e => e.name), ...librarySlots.map(e => e.name)]),
     ];
 
-    // Unique printing-specified entries (deduped by set+collector key)
     const allEntries = [...commanderEntries, ...libraryEntries];
     const uniquePrintings = [...new Map(
       allEntries
@@ -136,7 +135,6 @@ export default function ImportDeckScreen() {
         console.warn('Some cards failed:', errors);
       }
 
-      // Fetch printing-specific cards; fall back silently if 404
       type FetchedCard = (typeof results)[string];
       const printingMap = new Map<string, FetchedCard>();
       for (const e of uniquePrintings) {
@@ -238,7 +236,6 @@ export default function ImportDeckScreen() {
         for (const c of results[name]?.colorIdentity ?? []) allColors.add(c);
       }
 
-      // Pre-fetch and cache token art
       const tokenNames = parseTokenList(tokenList);
       const tokens: TokenTemplate[] = [];
 
@@ -246,7 +243,6 @@ export default function ImportDeckScreen() {
         setTokenProgress({ current: 0, total: tokenNames.length });
         for (let i = 0; i < tokenNames.length; i++) {
           const name = tokenNames[i];
-          // fetchTokenImage caches the URL — we just call it to warm the cache
           await fetchTokenImage(name, []);
           tokens.push({ name, power: '', toughness: '', colors: [] });
           setTokenProgress({ current: i + 1, total: tokenNames.length });
@@ -254,7 +250,6 @@ export default function ImportDeckScreen() {
       }
 
       const primaryCommander = getResult(commanderEntries[0]);
-      // SAM1-69: WUBRG ordering for combined color identity.
       const WUBRG = ['W', 'U', 'B', 'R', 'G'];
       const deck: Deck = {
         id: Date.now().toString(),
@@ -313,103 +308,90 @@ export default function ImportDeckScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.kav}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.label}>Deck Name</Text>
-        <TextInput
-          style={styles.input}
-          value={deckName}
-          onChangeText={setDeckName}
-          placeholder="e.g. Ur-Dragon"
-          placeholderTextColor={colors.text.muted}
-          editable={!importing}
-        />
+      <TomePageFrame>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>Deck Name</Text>
+          <TextInput
+            value={deckName}
+            onChangeText={setDeckName}
+            placeholder="e.g. Ur-Dragon"
+            editable={!importing}
+          />
 
-        <Text style={styles.label}>Deck List</Text>
-        <Text style={styles.hint}>
-          One card per line: "1 Card Name" or "1 Card Name (SET) 123". First line is the commander; mark partner commanders with "*CMDR*" suffix on each.
-        </Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={deckList}
-          onChangeText={setDeckList}
-          placeholder={'1 The Ur-Dragon\n1 Scion of the Ur-Dragon\n4 Cultivate\n...'}
-          placeholderTextColor={colors.text.muted}
-          multiline
-          textAlignVertical="top"
-          editable={!importing}
-        />
+          <Text style={styles.label}>Deck List</Text>
+          <Text style={styles.hint}>
+            One card per line: "1 Card Name" or "1 Card Name (SET) 123". First line is the commander; mark partner commanders with "*CMDR*" suffix on each.
+          </Text>
+          <TextInput
+            value={deckList}
+            onChangeText={setDeckList}
+            placeholder={'1 The Ur-Dragon\n1 Scion of the Ur-Dragon\n4 Cultivate\n...'}
+            multiline
+            textAlignVertical="top"
+            editable={!importing}
+            style={styles.textArea}
+          />
 
-        <Text style={styles.label}>Tokens (optional)</Text>
-        <Text style={styles.hint}>
-          One per line — art will be pre-fetched and cached.
-        </Text>
-        <TextInput
-          style={[styles.input, styles.tokenArea]}
-          value={tokenList}
-          onChangeText={setTokenList}
-          placeholder={'Goblin\nTreasure\nSoldier\n...'}
-          placeholderTextColor={colors.text.muted}
-          multiline
-          textAlignVertical="top"
-          editable={!importing}
-          autoCapitalize="words"
-        />
+          <Text style={styles.label}>Tokens (optional)</Text>
+          <Text style={styles.hint}>
+            One per line — art will be pre-fetched and cached.
+          </Text>
+          <TextInput
+            value={tokenList}
+            onChangeText={setTokenList}
+            placeholder={'Goblin\nTreasure\nSoldier\n...'}
+            multiline
+            textAlignVertical="top"
+            editable={!importing}
+            autoCapitalize="words"
+            style={styles.tokenArea}
+          />
 
-        {importing ? (
-          <View style={styles.progressBox}>
-            <ActivityIndicator size="large" color={colors.accent.primary} />
-            {progressLabel()}
-          </View>
-        ) : (
-          <Pressable style={styles.button} onPress={handleImport}>
-            <Text style={styles.buttonText}>Import Deck</Text>
-          </Pressable>
-        )}
-      </ScrollView>
+          {importing ? (
+            <View style={styles.progressBox}>
+              <ActivityIndicator size="large" color={colors.accent.primary} />
+              {progressLabel()}
+            </View>
+          ) : (
+            <View style={styles.buttonWrap}>
+              <Button onPress={handleImport}>Import Deck</Button>
+            </View>
+          )}
+        </ScrollView>
+      </TomePageFrame>
     </KeyboardAvoidingView>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  scroll: { padding: 18 },
+  kav: { flex: 1 },
+  scroll: { paddingBottom: 24 },
   label: {
-    color: colors.accent.primary,
+    color: colors.text.ink,
+    fontFamily: fonts.display,
     fontSize: 13,
-    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
+    marginTop: 18,
     marginBottom: 6,
-    marginTop: 14,
   },
-  hint: { color: colors.text.muted, fontSize: 12, marginBottom: 8 },
-  input: {
-    backgroundColor: colors.bg.surface,
-    color: colors.text.primary,
-    borderWidth: 1,
-    borderColor: colors.text.muted,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
+  hint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    marginBottom: 8,
+    lineHeight: 18,
   },
   textArea: { height: 300, lineHeight: 22 },
   tokenArea: { height: 120, lineHeight: 22 },
   progressBox: { marginTop: 24, alignItems: 'center', gap: 12 },
-  progressText: { color: colors.text.secondary, fontSize: 15 },
-  progressNum: { color: colors.accent.primary, fontWeight: '700' },
-  button: {
-    marginTop: 28,
-    backgroundColor: colors.accent.dark,
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  buttonText: { color: colors.accent.primary, fontSize: 17, fontWeight: '800' },
+  progressText: { color: colors.text.ink, fontFamily: fonts.body, fontSize: 15 },
+  progressNum: { color: colors.accent.dark, fontFamily: fonts.bodyBold },
+  buttonWrap: { marginTop: 28 },
 }); }
