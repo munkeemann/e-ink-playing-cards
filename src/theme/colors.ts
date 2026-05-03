@@ -16,7 +16,7 @@ import { createContext, createElement, useContext, useEffect, useMemo, useState 
 import type { ReactNode } from 'react';
 import { loadSettings, saveSettings } from '../storage/deckStorage';
 
-export type ThemeName = 'default' | 'slate';
+export type ThemeName = 'default' | 'slate' | 'arcane';
 
 export type Theme = {
   bg: { app: string; surface: string; elevated: string };
@@ -66,9 +66,26 @@ const SLATE_THEME: Theme = {
   },
 };
 
+const ARCANE_THEME: Theme = {
+  bg: { app: '#1A140E', surface: '#2B1F12', elevated: '#2B1F12' },
+  text: { primary: '#E8DCC4', secondary: '#B8A989', muted: '#7A6E5A', disabled: '#5C523F' },
+  accent: { primary: '#C9A961', dark: '#8A7340' },
+  border: '#C9A961',
+  divider: '#3D2E1C',
+  status: { warning: '#B8732E', danger: '#7A1E1E', success: '#5C7A3A' },
+  overlay: {
+    accent40: 'rgba(26,20,14,0.4)',
+    accent50: 'rgba(26,20,14,0.5)',
+    dark: 'rgba(26,20,14,0.6)',
+    darker: 'rgba(15,11,7,0.92)',
+    light: 'rgba(26,20,14,0.12)',
+  },
+};
+
 export const THEMES: Record<ThemeName, Theme> = {
   default: DEFAULT_THEME,
   slate: SLATE_THEME,
+  arcane: ARCANE_THEME,
 };
 
 type ThemeCtx = {

@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   librarySleeveDepth: 1,
   devMode: false,
   piDebugAlerts: false,
-  theme: 'default',
+  theme: 'arcane',
 };
 
 export async function loadDecks(): Promise<Deck[]> {
@@ -69,7 +69,7 @@ export async function loadSettings(): Promise<AppSettings> {
   const raw = await AsyncStorage.getItem(SETTINGS_KEY);
   if (!raw) return { ...DEFAULT_SETTINGS };
   const parsed = JSON.parse(raw) as Partial<AppSettings>;
-  const themeValid = parsed.theme === 'default' || parsed.theme === 'slate';
+  const themeValid = parsed.theme === 'default' || parsed.theme === 'slate' || parsed.theme === 'arcane';
   if (parsed.theme && !themeValid) {
     console.warn(`[settings] unknown theme "${parsed.theme}", falling back to default`);
   }
@@ -79,7 +79,7 @@ export async function loadSettings(): Promise<AppSettings> {
     librarySleeveDepth: parsed.librarySleeveDepth ?? DEFAULT_SETTINGS.librarySleeveDepth,
     devMode: parsed.devMode ?? DEFAULT_SETTINGS.devMode,
     piDebugAlerts: parsed.piDebugAlerts ?? DEFAULT_SETTINGS.piDebugAlerts,
-    theme: themeValid ? parsed.theme as 'default' | 'slate' : DEFAULT_SETTINGS.theme,
+    theme: themeValid ? parsed.theme as 'default' | 'slate' | 'arcane' : DEFAULT_SETTINGS.theme,
   };
 }
 
