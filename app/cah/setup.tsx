@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,10 +28,13 @@ import {
 import { loadActivePacks, saveActivePacks } from '../../src/storage/cahPacksStorage';
 import { getPromptsForPacks, getResponsesForPacks } from '../../src/cah/CahContent';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button, Stepper } from '../../src/components/parchment';
 
 type Ruleset = 'official' | 'maxs';
 
-const MIN_PLAYERS = 3;          // Official
+const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 10;
 const MIN_HAND = 5;
 const MAX_HAND = 10;
@@ -43,39 +45,76 @@ const MAXS_MIN_K = 1;
 const MAXS_MAX_K = 10;
 const REGISTERED_POLL_MS = 3000;
 
-function Stepper({
+/**
+ * Inline ChipButton for ruleset + pack selection. parchmentDeep fill + 1px
+ * gold border by default; on press / active, fills with accent.primary
+ * (gold leaf) and label color flips to bg.app (dark walnut). Same idiom
+ * as the gold Save button — stays consistent across the parchment palette.
+ *
+ * Inline-scoped per the rollout spec; promote to parchment library if a
+ * second screen demonstrates the same chip pattern.
+ */
+function ChipButton({
   label,
-  value,
-  onDecrement,
-  onIncrement,
-  hint,
+  active,
+  onPress,
+  badge,
 }: {
   label: string;
-  value: number;
-  onDecrement: () => void;
-  onIncrement: () => void;
-  hint?: string;
+  active: boolean;
+  onPress: () => void;
+  badge?: string | null;
 }) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeChipStyles(colors), [colors]);
   return (
-    <View style={styles.stepperRow}>
-      <View style={styles.stepperLeft}>
-        <Text style={styles.stepperLabel}>{label}</Text>
-        {hint ? <Text style={styles.stepperHint}>{hint}</Text> : null}
-      </View>
-      <View style={styles.stepperControls}>
-        <Pressable style={styles.stepperBtn} onPress={onDecrement} hitSlop={8}>
-          <Text style={styles.stepperBtnText}>−</Text>
-        </Pressable>
-        <Text style={styles.stepperValue}>{value}</Text>
-        <Pressable style={styles.stepperBtn} onPress={onIncrement} hitSlop={8}>
-          <Text style={styles.stepperBtnText}>+</Text>
-        </Pressable>
-      </View>
-    </View>
+    <Pressable
+      style={[styles.chip, active && styles.chipActive]}
+      onPress={onPress}
+    >
+      <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
+      {badge ? (
+        <Text style={[styles.chipBadge, active && styles.chipBadgeActive]}>{badge}</Text>
+      ) : null}
+    </Pressable>
   );
 }
+
+function makeChipStyles(colors: Theme) { return StyleSheet.create({
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    backgroundColor: colors.bg.parchmentDeep,
+    alignItems: 'center',
+    minHeight: 36,
+    justifyContent: 'center',
+  },
+  chipActive: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.dark,
+  },
+  chipLabel: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+  },
+  chipLabelActive: {
+    color: colors.bg.app,
+    fontFamily: fonts.displayBold,
+  },
+  chipBadge: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  chipBadgeActive: {
+    color: colors.bg.app,
+  },
+}); }
 
 function packBadgeText(chip: PackChip): string | null {
   if (chip.promptCount === 0 && chip.responseCount > 0) return 'responses only';
@@ -96,7 +135,6 @@ export default function CahSetupScreen() {
 
   const [activePackIds, setActivePackIds] = useState<string[]>(DEFAULT_ACTIVE_PACK_IDS);
   const [packsLoaded, setPacksLoaded] = useState(false);
-  // SAM1-73: accordion expanded state per category. All collapsed by default.
   const [expandedCats, setExpandedCats] = useState<Set<PackCategory>>(new Set());
 
   useEffect(() => {
@@ -118,7 +156,6 @@ export default function CahSetupScreen() {
     saveActivePacks(activePackIds);
   }, [activePackIds, packsLoaded]);
 
-  // Poll registered-sleeve count for the Max's budget indicator.
   useEffect(() => {
     let cancelled = false;
     const tick = async () => {
@@ -258,274 +295,285 @@ export default function CahSetupScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Cards Against Humanity</Text>
-        <Text style={styles.packNote}>
-          {ruleset === 'maxs' ? 'Ruleset: Max\'s Rules' : 'Ruleset: Official'}
-        </Text>
-      </View>
+    <TomePageFrame>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Cards Against Humanity</Text>
+          <Text style={styles.subtitle}>
+            {ruleset === 'maxs' ? "Ruleset: Max's Rules" : 'Ruleset: Official'}
+          </Text>
+        </View>
 
-      {/* Ruleset picker */}
-      <View style={styles.rulesetRow}>
-        {(['maxs', 'official'] as const).map(r => (
-          <Pressable
-            key={r}
-            style={[styles.rulesetChip, ruleset === r && styles.rulesetChipActive]}
-            onPress={() => setRuleset(r)}
-          >
-            <Text style={[styles.rulesetChipText, ruleset === r && styles.rulesetChipTextActive]}>
-              {r === 'maxs' ? "Max's Rules" : 'Official'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+        {/* Ruleset picker */}
+        <View style={styles.rulesetRow}>
+          {(['maxs', 'official'] as const).map(r => (
+            <View key={r} style={styles.rulesetChipWrap}>
+              <ChipButton
+                label={r === 'maxs' ? "Max's Rules" : 'Official'}
+                active={ruleset === r}
+                onPress={() => setRuleset(r)}
+              />
+            </View>
+          ))}
+        </View>
 
-      {ruleset === 'official' ? (
-        <>
-          <View style={styles.card}>
-            <Stepper
-              label="Players"
-              value={playerCount}
-              onDecrement={() => setPlayerCount(v => Math.max(MIN_PLAYERS, v - 1))}
-              onIncrement={() => setPlayerCount(v => Math.min(MAX_PLAYERS, v + 1))}
-              hint={`Min ${MIN_PLAYERS}, max ${MAX_PLAYERS}`}
-            />
-            <View style={styles.divider} />
-            <Stepper
-              label="Hand size"
-              value={handSize}
-              onDecrement={() => setHandSize(v => Math.max(MIN_HAND, v - 1))}
-              onIncrement={() => setHandSize(v => Math.min(MAX_HAND, v + 1))}
-              hint={`${MIN_HAND}–${MAX_HAND} cards per player`}
-            />
-          </View>
+        {ruleset === 'official' ? (
+          <>
+            <View style={styles.stepperGroup}>
+              <View style={styles.stepperRow}>
+                <View style={styles.stepperLabelCol}>
+                  <Text style={styles.stepperLabel}>Players</Text>
+                  <Text style={styles.stepperHint}>Min {MIN_PLAYERS}, max {MAX_PLAYERS}</Text>
+                </View>
+                <Stepper
+                  value={playerCount}
+                  min={MIN_PLAYERS}
+                  max={MAX_PLAYERS}
+                  onChange={setPlayerCount}
+                />
+              </View>
+              <View style={[styles.stepperRow, styles.stepperRowDivider]}>
+                <View style={styles.stepperLabelCol}>
+                  <Text style={styles.stepperLabel}>Hand size</Text>
+                  <Text style={styles.stepperHint}>{MIN_HAND}–{MAX_HAND} cards per player</Text>
+                </View>
+                <Stepper
+                  value={handSize}
+                  min={MIN_HAND}
+                  max={MAX_HAND}
+                  onChange={setHandSize}
+                />
+              </View>
+            </View>
 
-          <View style={styles.sleeveHint}>
-            <Text style={styles.sleeveHintText}>
+            <Text style={styles.sleeveHint}>
               {officialSleeveCount} sleeves required  (1 prompt + {playerCount} × {handSize})
             </Text>
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={styles.card}>
-            <Stepper
-              label="Players"
-              value={maxsPlayerCount}
-              onDecrement={() => setMaxsPlayerCount(v => Math.max(MAXS_MIN_PLAYERS, v - 1))}
-              onIncrement={() => setMaxsPlayerCount(v => Math.min(MAXS_MAX_PLAYERS, v + 1))}
-              hint={`Min ${MAXS_MIN_PLAYERS}, max ${MAXS_MAX_PLAYERS}`}
-            />
-            <View style={styles.divider} />
-            <Stepper
-              label="Cards per player (K)"
-              value={maxsK}
-              onDecrement={() => setMaxsK(v => Math.max(MAXS_MIN_K, v - 1))}
-              onIncrement={() => setMaxsK(v => Math.min(MAXS_MAX_K, v + 1))}
-              hint={`${MAXS_MIN_K}–${MAXS_MAX_K} cards per player`}
-            />
-          </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.stepperGroup}>
+              <View style={styles.stepperRow}>
+                <View style={styles.stepperLabelCol}>
+                  <Text style={styles.stepperLabel}>Players</Text>
+                  <Text style={styles.stepperHint}>Min {MAXS_MIN_PLAYERS}, max {MAXS_MAX_PLAYERS}</Text>
+                </View>
+                <Stepper
+                  value={maxsPlayerCount}
+                  min={MAXS_MIN_PLAYERS}
+                  max={MAXS_MAX_PLAYERS}
+                  onChange={setMaxsPlayerCount}
+                />
+              </View>
+              <View style={[styles.stepperRow, styles.stepperRowDivider]}>
+                <View style={styles.stepperLabelCol}>
+                  <Text style={styles.stepperLabel}>Cards per player (K)</Text>
+                  <Text style={styles.stepperHint}>{MAXS_MIN_K}–{MAXS_MAX_K} cards per player</Text>
+                </View>
+                <Stepper
+                  value={maxsK}
+                  min={MAXS_MIN_K}
+                  max={MAXS_MAX_K}
+                  onChange={setMaxsK}
+                />
+              </View>
+            </View>
 
-          <View style={styles.sleeveHint}>
-            <Text style={[styles.sleeveHintText, !maxsBudgetOK && styles.sleeveHintTextAmber]}>
+            <Text style={[styles.sleeveHint, !maxsBudgetOK && styles.sleeveHintWarn]}>
               {registeredCount === null
                 ? `${maxsSleeveCount} sleeves needed  (1 prompt + ${maxsPlayerCount} × ${maxsK}) · checking registered…`
                 : maxsBudgetOK
                   ? `${maxsSleeveCount} sleeves needed, ${registeredCount} connected`
                   : `Needs ${maxsSleeveCount} sleeves, ${registeredCount} connected`}
             </Text>
-          </View>
-        </>
-      )}
-
-      {/* Pack selector — categorized accordion (SAM1-73). Repositioned below
-          ruleset-specific config so primary setup controls aren't pushed down. */}
-      <View style={styles.packsSection}>
-        <View style={styles.packsHeaderRow}>
-          <Text style={styles.sectionLabel}>Packs</Text>
-          <Text style={styles.packsSummary}>
-            {chips.filter(isChipActive).length} / {chips.length} selected
-          </Text>
-        </View>
-        <Text style={[styles.packHint, (emptySelection || (ruleset === 'maxs' ? !maxsPoolOK : !officialPoolOK)) && styles.packHintWarn]}>
-          {packHint}
-        </Text>
-        {CATEGORY_ORDER.map(cat => {
-          const catChips = chipsByCat[cat];
-          if (catChips.length === 0) return null;
-          const expanded = expandedCats.has(cat);
-          const activeCount = catChips.filter(isChipActive).length;
-          return (
-            <View key={cat} style={styles.categoryBlock}>
-              <Pressable style={styles.categoryHeader} onPress={() => toggleCategory(cat)}>
-                <Text style={styles.categoryHeaderLabel}>{CATEGORY_LABELS[cat]}</Text>
-                <Text style={styles.categoryHeaderCount}>
-                  {activeCount} / {catChips.length}
-                </Text>
-                <Text style={styles.categoryHeaderChevron}>{expanded ? '▾' : '▸'}</Text>
-              </Pressable>
-              {expanded && (
-                <View style={[styles.packChipRow, styles.categoryBody]}>
-                  {catChips.map(chip => {
-                    const active = isChipActive(chip);
-                    const badge = packBadgeText(chip);
-                    return (
-                      <Pressable
-                        key={chip.id}
-                        style={[styles.packChip, active && styles.packChipActive]}
-                        onPress={() => toggleChip(chip)}
-                      >
-                        <Text style={[styles.packChipText, active && styles.packChipTextActive]}>
-                          {chip.label}
-                        </Text>
-                        {badge ? (
-                          <Text style={[styles.packChipBadge, active && styles.packChipBadgeActive]}>
-                            {badge}
-                          </Text>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.startBtn,
-          (pressed || busy) && styles.startBtnPressed,
-          startBlocked && styles.startBtnDisabled,
-        ]}
-        onPress={handleStart}
-        disabled={busy || startBlocked}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.bg.app} />
-        ) : (
-          <Text style={styles.startBtnLabel}>
-            {ruleset === 'maxs' ? "Start Max's Game  →" : 'Start Game  →'}
-          </Text>
+          </>
         )}
-      </Pressable>
-    </ScrollView>
+
+        {/* Pack selector — categorized accordion */}
+        <View style={styles.packsSection}>
+          <View style={styles.packsHeaderRow}>
+            <Text style={styles.sectionLabel}>Packs</Text>
+            <Text style={styles.packsSummary}>
+              {chips.filter(isChipActive).length} / {chips.length} selected
+            </Text>
+          </View>
+          <Text style={[styles.packHint, (emptySelection || (ruleset === 'maxs' ? !maxsPoolOK : !officialPoolOK)) && styles.packHintWarn]}>
+            {packHint}
+          </Text>
+          {CATEGORY_ORDER.map(cat => {
+            const catChips = chipsByCat[cat];
+            if (catChips.length === 0) return null;
+            const expanded = expandedCats.has(cat);
+            const activeCount = catChips.filter(isChipActive).length;
+            return (
+              <View key={cat} style={styles.categoryBlock}>
+                <Pressable style={styles.categoryHeader} onPress={() => toggleCategory(cat)}>
+                  <Text style={styles.categoryHeaderLabel}>{CATEGORY_LABELS[cat]}</Text>
+                  <Text style={styles.categoryHeaderCount}>
+                    {activeCount} / {catChips.length}
+                  </Text>
+                  <Text style={styles.categoryHeaderChevron}>{expanded ? '▾' : '▸'}</Text>
+                </Pressable>
+                {expanded && (
+                  <View style={styles.categoryBody}>
+                    {catChips.map(chip => {
+                      const active = isChipActive(chip);
+                      const badge = packBadgeText(chip);
+                      return (
+                        <ChipButton
+                          key={chip.id}
+                          label={chip.label}
+                          active={active}
+                          onPress={() => toggleChip(chip)}
+                          badge={badge}
+                        />
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={styles.startBtnWrap}>
+          <Button
+            variant="primary"
+            onPress={handleStart}
+            disabled={busy || startBlocked}
+          >
+            {busy
+              ? 'Starting…'
+              : ruleset === 'maxs' ? "Start Max's Game  →" : 'Start Game  →'}
+          </Button>
+        </View>
+      </ScrollView>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 20, gap: 16, paddingBottom: 40 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16, gap: 16 },
 
-  header: { alignItems: 'center', paddingVertical: 16 },
-  title: { color: colors.accent.primary, fontSize: 22, fontWeight: '800', letterSpacing: 1 },
-  packNote: { color: colors.text.muted, fontSize: 12, marginTop: 6 },
-
-  card: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    overflow: 'hidden',
+  header: { alignItems: 'center', paddingTop: 4, paddingBottom: 12 },
+  title: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 20,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
-  divider: { height: 1, backgroundColor: colors.bg.elevated },
+  subtitle: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 12,
+    marginTop: 4,
+  },
 
+  // Stepper group (replaces leather card)
+  stepperGroup: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.text.inkSoft,
+  },
   stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
   },
-  stepperLeft: { gap: 3 },
-  stepperLabel: { color: colors.text.primary, fontSize: 15, fontWeight: '600' },
-  stepperHint: { color: colors.text.muted, fontSize: 11 },
-  stepperControls: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  stepperBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: colors.bg.elevated,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
+  stepperRowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.text.inkSoft,
   },
-  stepperBtnText: { color: colors.accent.primary, fontSize: 20, fontWeight: '700', lineHeight: 22 },
-  stepperValue: { color: colors.text.primary, fontSize: 20, fontWeight: '700', minWidth: 32, textAlign: 'center' },
+  stepperLabelCol: { flex: 1, marginRight: 12, gap: 2 },
+  stepperLabel: {
+    color: colors.text.ink,
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
+  stepperHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+  },
 
-  sleeveHint: { alignItems: 'center' },
-  sleeveHintText: { color: colors.text.muted, fontSize: 12 },
-  sleeveHintTextAmber: { color: colors.status.warning },
+  sleeveHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  sleeveHintWarn: { color: colors.status.warning },
 
   rulesetRow: { flexDirection: 'row', gap: 8 },
-  rulesetChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-  },
-  rulesetChipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  rulesetChipText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
-  rulesetChipTextActive: { color: colors.accent.primary },
+  rulesetChipWrap: { flex: 1 },
 
   packsSection: { gap: 8 },
-  packsHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  packsSummary: { color: colors.text.muted, fontSize: 12, fontWeight: '600' },
-  sectionLabel: { color: colors.text.primary, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
+  packsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionLabel: {
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  packsSummary: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+  packHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 12,
+  },
+  packHintWarn: { color: colors.status.warning, fontFamily: fonts.bodyBold },
 
   categoryBlock: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.bg.elevated,
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.text.inkSoft,
   },
   categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 4,
     paddingVertical: 12,
     gap: 10,
   },
-  categoryHeaderLabel: { flex: 1, color: colors.text.primary, fontSize: 14, fontWeight: '700' },
-  categoryHeaderCount: { color: colors.text.muted, fontSize: 12, fontWeight: '600' },
-  categoryHeaderChevron: { color: colors.accent.primary, fontSize: 14, fontWeight: '700', minWidth: 14, textAlign: 'right' },
-  categoryBody: { paddingHorizontal: 12, paddingTop: 4, paddingBottom: 12 },
-
-  packChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  packChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
+  categoryHeaderLabel: {
+    flex: 1,
+    color: colors.text.ink,
+    fontFamily: fonts.display,
+    fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  packChipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  packChipText: { color: colors.text.muted, fontSize: 13, fontWeight: '600' },
-  packChipTextActive: { color: colors.accent.primary },
-  packChipBadge: { color: colors.text.muted, fontSize: 10, marginTop: 2, fontStyle: 'italic' },
-  packChipBadgeActive: { color: colors.accent.dark },
-
-  packHint: { color: colors.text.muted, fontSize: 12 },
-  packHintWarn: { color: colors.status.warning },
-
-  startBtn: {
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
+  categoryHeaderCount: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
   },
-  startBtnPressed: { opacity: 0.7 },
-  startBtnDisabled: { opacity: 0.4 },
-  startBtnLabel: { color: colors.bg.app, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  categoryHeaderChevron: {
+    color: colors.accent.primary,
+    fontSize: 14,
+    minWidth: 14,
+    textAlign: 'right',
+  },
+  categoryBody: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    paddingBottom: 14,
+  },
+
+  startBtnWrap: { marginTop: 8 },
 }); }
