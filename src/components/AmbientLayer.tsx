@@ -19,7 +19,11 @@ const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 const { width: W, height: H } = Dimensions.get('window');
 
-const TEAL = '#88DBD9';
+// Holds the ambient tint color. Named TEAL historically; now stores
+// gold leaf (#C9A961, accent.primary) for the ARCANE theme. Used by the
+// vignette gradient, glyph borders/shadows, particle fill/glow, and
+// glyph text shadows. Module-level so styles below can be static.
+const TEAL = '#C9A961';
 const PURPLE_R = 128;
 const PURPLE_G = 131;
 const PURPLE_B = 211;

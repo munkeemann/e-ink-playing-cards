@@ -270,15 +270,15 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   tile: {
     flex: 1,
     minHeight: 155,
-    borderRadius: 12,
+    borderRadius: 6,
     padding: 16,
     borderWidth: 1,
     overflow: 'hidden',
     justifyContent: 'space-between',
   },
   tileAvailable: {
-    backgroundColor: colors.bg.surface,
-    borderColor: colors.accent.dark,
+    backgroundColor: colors.bg.parchment,
+    borderColor: colors.accent.primary,
     shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
@@ -291,13 +291,13 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   tilePressed: {
     borderColor: colors.accent.primary,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.parchmentDeep,
   },
 
   tileIcon: { fontSize: 28 },
-  tileTitle: { color: colors.text.primary, fontSize: 14, fontWeight: '700', lineHeight: 18, marginTop: 10 },
+  tileTitle: { color: colors.text.ink, fontSize: 14, fontWeight: '700', lineHeight: 18, marginTop: 10 },
   tileTitleDim: { color: colors.text.muted },
-  tileSubtitle: { color: colors.text.secondary, fontSize: 11, marginTop: 4 },
+  tileSubtitle: { color: colors.text.inkSoft, fontSize: 11, marginTop: 4 },
   tileSubtitleDim: { color: colors.text.muted },
 
   tileArrow: { alignSelf: 'flex-end', marginTop: 8 },
