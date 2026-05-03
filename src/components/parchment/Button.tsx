@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Theme, useTheme } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   onPress: () => void;
@@ -68,9 +69,8 @@ function makeStyles(colors: Theme) {
     },
     primaryLabel: {
       color: colors.bg.app,
-      fontFamily: 'serif',
+      fontFamily: fonts.display,
       fontSize: 17,
-      fontWeight: '700',
       letterSpacing: 0.5,
     },
     secondary: {
@@ -85,9 +85,8 @@ function makeStyles(colors: Theme) {
     },
     secondaryLabel: {
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.display,
       fontSize: 16,
-      fontWeight: '700',
     },
     disabled: { opacity: 0.4 },
     pressed: { opacity: 0.85 },

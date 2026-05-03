@@ -11,6 +11,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Theme, useTheme } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   value: number;
@@ -62,16 +63,14 @@ function makeStyles(colors: Theme) {
     btnDisabled: { opacity: 0.35 },
     glyph: {
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.display,
       fontSize: 22,
-      fontWeight: '700',
       lineHeight: 26,
     },
     value: {
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.display,
       fontSize: 22,
-      fontWeight: '700',
       minWidth: 48,
       textAlign: 'center',
     },

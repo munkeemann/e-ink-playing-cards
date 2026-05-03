@@ -16,6 +16,7 @@ import { useMemo } from 'react';
 import { StyleSheet, TextInput as RNTextInput } from 'react-native';
 import type { TextInputProps } from 'react-native';
 import { Theme, useTheme } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 
 export default function TextInput(props: TextInputProps) {
   const colors = useTheme();
@@ -39,7 +40,7 @@ function makeStyles(colors: Theme) {
       borderColor: colors.accent.primary,
       paddingHorizontal: 12,
       paddingVertical: 10,
-      fontFamily: 'serif',
+      fontFamily: fonts.body,
       fontSize: 16,
       color: colors.text.ink,
     },

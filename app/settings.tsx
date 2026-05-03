@@ -10,6 +10,7 @@ import { loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storag
 import { configurePiDebug } from '../src/api/piServer';
 import { AppSettings } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
 import TomePageFrame from '../src/components/TomePageFrame';
 import { Button, Section, Stepper, Switch } from '../src/components/parchment';
 
@@ -175,7 +176,7 @@ function makeStyles(colors: Theme) {
     rowLabelCol: { flex: 1, marginRight: 12 },
     labelText: {
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.body,
       fontSize: 16,
     },
     subLabelText: {

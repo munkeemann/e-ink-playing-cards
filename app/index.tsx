@@ -20,6 +20,7 @@ import { clearMemo } from '../src/api/sleeveService';
 import TomePageFrame from '../src/components/TomePageFrame';
 import TomeTileFrame from '../src/components/TomeTileFrame';
 import { Theme, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
 
 type GameDef = {
   id: string;
@@ -221,9 +222,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   title: {
     color: colors.text.ink,
-    fontFamily: 'serif',
+    fontFamily: fonts.displayBold,
     fontSize: 36,
-    fontWeight: '800',
     letterSpacing: 0.5,
     marginTop: 8,
   },
@@ -233,9 +233,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   subtitle: {
     color: colors.text.inkSoft,
-    fontFamily: 'serif',
+    fontFamily: fonts.displayRegular,
     fontSize: 12,
-    fontWeight: '700',
     letterSpacing: 4,
   },
 
@@ -252,7 +251,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   resumeLeft: { flex: 1, gap: 3 },
   resumeLabel: { color: colors.accent.dark, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
-  resumeName: { color: colors.text.ink, fontFamily: 'serif', fontSize: 15, fontWeight: '700' },
+  resumeName: { color: colors.text.ink, fontFamily: fonts.bodyBold, fontSize: 15 },
   resumeArrow: { color: colors.accent.primary, fontSize: 28, marginLeft: 8 },
 
   grid: {
@@ -279,9 +278,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   tileLabel: {
     color: colors.text.ink,
-    fontFamily: 'serif',
+    fontFamily: fonts.display,
     fontSize: 18,
-    fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 10,
     textAlign: 'center',

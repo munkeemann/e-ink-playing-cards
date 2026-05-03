@@ -3,10 +3,30 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  Cinzel_400Regular,
+  Cinzel_600SemiBold,
+  Cinzel_700Bold,
+} from '@expo-google-fonts/cinzel';
+import {
+  EBGaramond_400Regular,
+  EBGaramond_400Regular_Italic,
+  EBGaramond_700Bold,
+} from '@expo-google-fonts/eb-garamond';
 import { loadSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { configurePiDebug } from '../src/api/piServer';
 import { ThemeProvider, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
 import TomeBackground from '../src/components/TomeBackground';
+
+// Keep the splash screen up at module load so the system font never
+// flashes between the launch screen and the first paint with Cinzel /
+// EB Garamond loaded. Hidden in RootLayout once useFonts() resolves.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* no-op: splash may already be gone in fast-refresh / dev reloads */
+});
 
 function StackWithTheme() {
   const colors = useTheme();
@@ -16,7 +36,7 @@ function StackWithTheme() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.bg.surface },
         headerTintColor: colors.accent.primary,
-        headerTitleStyle: { fontWeight: 'bold', color: colors.text.primary },
+        headerTitleStyle: { fontFamily: fonts.displayBold, color: colors.text.primary },
         contentStyle: { backgroundColor: 'transparent' },
       }}
     >
@@ -76,10 +96,27 @@ function StackWithTheme() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Cinzel_400Regular,
+    Cinzel_600SemiBold,
+    Cinzel_700Bold,
+    EBGaramond_400Regular,
+    EBGaramond_400Regular_Italic,
+    EBGaramond_700Bold,
+  });
+
   useEffect(() => {
     loadSettings().then(s => configurePiDebug(s.devMode && s.piDebugAlerts));
     syncSleeveCountFromPi().catch(e => console.warn('[settings] sleeveCount sync failed:', e));
   }, []);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => { /* no-op */ });
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={rootStyles.root}>

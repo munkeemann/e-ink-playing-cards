@@ -18,6 +18,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Theme, useTheme } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   label: string;
@@ -76,7 +77,7 @@ function makeStyles(colors: Theme, showHairline: boolean) {
     label: {
       flex: 1,
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.body,
       fontSize: 16,
     },
     chevron: {

@@ -14,6 +14,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Theme, useTheme } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 
 interface Props {
   title: string;
@@ -38,9 +39,8 @@ function makeStyles(colors: Theme) {
     section: { marginBottom: 24 },
     title: {
       color: colors.text.ink,
-      fontFamily: 'serif',
+      fontFamily: fonts.display,
       fontSize: 13,
-      fontWeight: '700',
       textTransform: 'uppercase',
       letterSpacing: 1.5,
       marginBottom: 6,
