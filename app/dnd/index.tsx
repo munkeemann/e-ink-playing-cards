@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo} from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import {
   FlatList,
   Pressable,
@@ -10,6 +10,9 @@ import { router, useFocusEffect } from 'expo-router';
 import { listDecks } from '../../src/storage/dndStorage';
 import { DndDeck } from '../../src/types/dnd';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrame from '../../src/components/TomePageFrame';
+import { Button } from '../../src/components/parchment';
 
 export default function DndDeckPickerScreen() {
   const colors = useTheme();
@@ -27,13 +30,15 @@ export default function DndDeckPickerScreen() {
     const subtitle = `${item.className}  ·  Level ${item.level}${modText}`;
     return (
       <Pressable
-        style={({ pressed }) => [styles.deckTile, pressed && styles.deckTilePressed]}
+        style={({ pressed }) => [styles.deckRow, pressed && styles.deckRowPressed]}
         onPress={() => router.push(`/dnd/${item.id}` as any)}
       >
-        <View style={styles.deckTileBody}>
+        <View style={styles.deckBody}>
           <Text style={styles.deckName} numberOfLines={1}>{item.name}</Text>
           <Text style={styles.deckMeta}>{subtitle}</Text>
-          <Text style={styles.deckSpells}>{item.spells.length} spell{item.spells.length === 1 ? '' : 's'}</Text>
+          <Text style={styles.deckSpells}>
+            {item.spells.length} spell{item.spells.length === 1 ? '' : 's'}
+          </Text>
         </View>
         <Text style={styles.deckArrow}>›</Text>
       </Pressable>
@@ -41,7 +46,7 @@ export default function DndDeckPickerScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <TomePageFrame>
       {decks.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No decks yet</Text>
@@ -49,59 +54,70 @@ export default function DndDeckPickerScreen() {
         </View>
       ) : (
         <FlatList
+          style={styles.list}
           data={decks}
           keyExtractor={d => d.id}
           renderItem={renderDeck}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.listContent}
         />
       )}
-      <Pressable style={styles.newBtn} onPress={() => router.push('/dnd/new' as any)}>
-        <Text style={styles.newBtnLabel}>+  New Deck</Text>
-      </Pressable>
-    </View>
+      <View style={styles.buttonWrap}>
+        <Button onPress={() => router.push('/dnd/new' as any)}>+  New Deck</Button>
+      </View>
+    </TomePageFrame>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  list: { padding: 16, paddingBottom: 96 },
+  list: { flex: 1 },
+  listContent: { paddingBottom: 12 },
 
-  deckTile: {
+  deckRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.accent.dark,
-    padding: 14,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.inkSoft,
   },
-  deckTilePressed: { backgroundColor: colors.bg.elevated, borderColor: colors.accent.primary },
-  deckTileBody: { flex: 1, gap: 3 },
-  deckName: { color: colors.text.primary, fontSize: 16, fontWeight: '700' },
-  deckMeta: { color: colors.text.secondary, fontSize: 12 },
-  deckSpells: { color: colors.text.muted, fontSize: 11, marginTop: 2 },
-  deckArrow: { color: colors.accent.primary, fontSize: 24, marginLeft: 8 },
+  deckRowPressed: {
+    backgroundColor: colors.bg.parchmentDeep,
+  },
+  deckBody: { flex: 1, gap: 3 },
+  deckName: {
+    color: colors.text.ink,
+    fontFamily: fonts.bodyBold,
+    fontSize: 16,
+  },
+  deckMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
+  deckSpells: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  deckArrow: {
+    color: colors.accent.primary,
+    fontSize: 24,
+    marginLeft: 8,
+  },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 32 },
-  emptyTitle: { color: colors.accent.primary, fontSize: 22, fontWeight: '700' },
-  emptyHint: { color: colors.text.secondary, fontSize: 14, textAlign: 'center' },
-
-  newBtn: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+  emptyTitle: {
+    color: colors.text.ink,
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
   },
-  newBtnLabel: { color: colors.bg.app, fontSize: 16, fontWeight: '800', letterSpacing: 0.8 },
+  emptyHint: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+
+  buttonWrap: { marginTop: 8 },
 }); }
