@@ -124,7 +124,7 @@ export default function RevealScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   sectionHeader: {
     paddingHorizontal: 16,
     paddingTop: 12,

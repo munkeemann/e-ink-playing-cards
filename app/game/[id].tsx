@@ -1826,7 +1826,7 @@ export default function InGameScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
@@ -1933,7 +1933,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   sheetTitle: { color: colors.accent.primary, fontSize: 18, fontWeight: '800', marginBottom: 14 },
   sheetLabel: { color: colors.text.secondary, fontSize: 13, marginBottom: 6, marginTop: 10 },
   sheetInput: {
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     color: colors.text.primary,
     borderWidth: 1,
     borderColor: colors.text.muted,
@@ -1997,7 +1997,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   cardName: { color: colors.text.primary, fontSize: 15 },
   tokenBadge: { color: colors.status.warning, fontSize: 11, fontWeight: '700', marginLeft: 6 },
 
-  tabRow: { flexDirection: 'row', marginBottom: 16, borderRadius: 8, backgroundColor: colors.bg.app, padding: 3 },
+  tabRow: { flexDirection: 'row', marginBottom: 16, borderRadius: 8, backgroundColor: 'transparent', padding: 3 },
   tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
   tabActive: { backgroundColor: colors.accent.dark },
   tabText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },

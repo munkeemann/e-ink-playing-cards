@@ -246,7 +246,7 @@ export default function SettingsScreen() {
 
 function makeStyles(colors: Theme) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg.app },
+    container: { flex: 1, backgroundColor: 'transparent' },
     scroll: { padding: 16, paddingBottom: 8 },
 
     sectionTitle: {

@@ -416,7 +416,7 @@ export default function CahSetupScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 20, gap: 16, paddingBottom: 40 },
 
   header: { alignItems: 'center', paddingVertical: 16 },
@@ -467,7 +467,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   rulesetChipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
@@ -483,7 +483,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.bg.elevated,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
   categoryHeader: {
@@ -505,7 +505,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     alignItems: 'center',
   },
   packChipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },

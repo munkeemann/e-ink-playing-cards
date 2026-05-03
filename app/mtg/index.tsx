@@ -113,7 +113,7 @@ export default function DeckListScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   list: { padding: 14 },
   tile: {
     height: 120,

@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { loadSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { configurePiDebug } from '../src/api/piServer';
 import { ThemeProvider, useTheme } from '../src/theme/colors';
+import TomeBackground from '../src/components/TomeBackground';
 
 function StackWithTheme() {
   const colors = useTheme();
@@ -12,17 +13,16 @@ function StackWithTheme() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.bg.app },
+        headerStyle: { backgroundColor: colors.bg.surface },
         headerTintColor: colors.accent.primary,
         headerTitleStyle: { fontWeight: 'bold', color: colors.text.primary },
-        contentStyle: { backgroundColor: colors.bg.app },
+        contentStyle: { backgroundColor: 'transparent' },
       }}
     >
       <Stack.Screen
         name="index"
         options={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bg.app },
         }}
       />
       <Stack.Screen
@@ -31,39 +31,39 @@ function StackWithTheme() {
       />
       <Stack.Screen
         name="coming-soon"
-        options={{ title: '', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: '' }}
       />
       <Stack.Screen
         name="holdem/setup"
-        options={{ title: "Texas Hold'em", contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: "Texas Hold'em" }}
       />
       <Stack.Screen
         name="holdem/game"
-        options={{ title: "Texas Hold'em", contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: "Texas Hold'em" }}
       />
       <Stack.Screen
         name="cah/setup"
-        options={{ title: 'Cards Against Humanity', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: 'Cards Against Humanity' }}
       />
       <Stack.Screen
         name="cah/game"
-        options={{ title: 'Cards Against Humanity', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: 'Cards Against Humanity' }}
       />
       <Stack.Screen
         name="cah/game_maxs"
-        options={{ title: "CAH — Max's Rules", contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: "CAH — Max's Rules" }}
       />
       <Stack.Screen
         name="dnd/index"
-        options={{ title: 'D&D Decks', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: 'D&D Decks' }}
       />
       <Stack.Screen
         name="dnd/new"
-        options={{ title: 'New D&D Deck', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: 'New D&D Deck' }}
       />
       <Stack.Screen
         name="dnd/[id]"
-        options={{ title: 'Deck', contentStyle: { backgroundColor: colors.bg.app } }}
+        options={{ title: 'Deck' }}
       />
       <Stack.Screen name="import" options={{ title: 'Import Deck' }} />
       <Stack.Screen name="deck/[id]" options={{ title: 'Deck Preview' }} />
@@ -83,6 +83,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={rootStyles.root}>
       <ThemeProvider>
+        <TomeBackground />
         <StackWithTheme />
       </ThemeProvider>
     </GestureHandlerRootView>

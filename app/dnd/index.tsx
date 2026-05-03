@@ -63,7 +63,7 @@ export default function DndDeckPickerScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   list: { padding: 16, paddingBottom: 96 },
 
   deckTile: {

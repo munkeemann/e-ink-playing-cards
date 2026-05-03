@@ -176,9 +176,9 @@ export default function CahMaxsGameScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: 16, paddingBottom: 40, gap: 12 },
-  loading: { flex: 1, backgroundColor: colors.bg.app, alignItems: 'center', justifyContent: 'center' },
+  loading: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
 
   phaseRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   phaseBadge: {
@@ -221,7 +221,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

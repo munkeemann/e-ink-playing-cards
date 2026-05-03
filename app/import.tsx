@@ -377,7 +377,7 @@ export default function ImportDeckScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   scroll: { padding: 18 },
   label: {
     color: colors.accent.primary,

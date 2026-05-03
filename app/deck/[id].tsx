@@ -639,7 +639,7 @@ export default function DeckPreviewScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
@@ -784,7 +784,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   sheetTitle: { color: colors.accent.primary, fontSize: 18, fontWeight: '800', marginBottom: 14 },
   sheetLabel: { color: colors.text.secondary, fontSize: 13, marginBottom: 6, marginTop: 10 },
   sheetInput: {
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     color: colors.text.primary,
     borderWidth: 1,
     borderColor: colors.text.muted,
@@ -855,7 +855,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
 
   // ── Printing picker ────────────────────────────────────────────────────────
   pickerSheet: {
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderWidth: 1,

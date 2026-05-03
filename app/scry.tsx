@@ -228,7 +228,7 @@ export default function ScryScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   sectionHeader: {
     paddingHorizontal: 16,
@@ -273,7 +273,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 11,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderColor: colors.bg.surface,
     gap: 10,

@@ -434,7 +434,7 @@ function Step5NameAndSave({ value, onChange, selectedCount }: { value: string; o
 // ── Styles ────────────────────────────────────────────────────────────────
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: colors.bg.app },
+  scroll: { flex: 1, backgroundColor: 'transparent' },
   container: { padding: 20, gap: 16, paddingBottom: 40 },
 
   stepBadge: {
@@ -470,7 +470,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
   },
   chipActive: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
   chipText: { color: colors.text.muted, fontSize: 13, fontWeight: '600' },
@@ -499,7 +499,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.divider,
@@ -521,7 +521,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.bg.elevated,
   },
@@ -536,7 +536,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.accent.dark,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -551,7 +551,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.divider,
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

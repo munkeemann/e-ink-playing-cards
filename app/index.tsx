@@ -208,7 +208,7 @@ export default function GameSelectScreen() {
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg.app },
+  container: { flex: 1, backgroundColor: 'transparent' },
 
   header: {
     paddingTop: 64,
@@ -286,7 +286,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     elevation: 4,
   },
   tileUnavailable: {
-    backgroundColor: colors.bg.app,
+    backgroundColor: 'transparent',
     borderColor: colors.divider,
   },
   tilePressed: {
