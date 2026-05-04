@@ -10,7 +10,7 @@
  */
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -18,11 +18,12 @@ interface Props {
   min?: number;
   max?: number;
   onChange: (next: number) => void;
+  register?: Register;
 }
 
-export default function Stepper({ value, min = -Infinity, max = Infinity, onChange }: Props) {
+export default function Stepper({ value, min = -Infinity, max = Infinity, onChange, register = 'parchment' }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, register), [colors, register]);
   const decDisabled = value <= min;
   const incDisabled = value >= max;
 
@@ -47,7 +48,8 @@ export default function Stepper({ value, min = -Infinity, max = Infinity, onChan
   );
 }
 
-function makeStyles(colors: Theme) {
+function makeStyles(colors: Theme, register: Register) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center' },
     btn: {
@@ -56,19 +58,19 @@ function makeStyles(colors: Theme) {
       borderRadius: 4,
       borderWidth: 1,
       borderColor: colors.accent.primary,
-      backgroundColor: colors.bg.parchmentDeep,
+      backgroundColor: r.recess,
       alignItems: 'center',
       justifyContent: 'center',
     },
     btnDisabled: { opacity: 0.35 },
     glyph: {
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.display,
       fontSize: 22,
       lineHeight: 26,
     },
     value: {
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.display,
       fontSize: 22,
       minWidth: 48,

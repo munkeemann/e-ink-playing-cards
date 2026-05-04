@@ -19,7 +19,7 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
-import { useTheme } from '../../theme/colors';
+import { Register, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -28,6 +28,7 @@ interface Props {
   capSize?: number;
   bodyStyle?: StyleProp<TextStyle>;
   containerStyle?: StyleProp<ViewStyle>;
+  register?: Register;
 }
 
 const LINE_HEIGHT_FACTOR = 1.45;
@@ -38,8 +39,10 @@ export default function DropCap({
   capSize,
   bodyStyle,
   containerStyle,
+  register = 'parchment',
 }: Props) {
   const colors = useTheme();
+  const r = registerTokens(colors, register);
   if (!children) return null;
   const cap = children.charAt(0);
   const body = children.slice(1);
@@ -64,7 +67,7 @@ export default function DropCap({
         style={[
           styles.body,
           {
-            color: colors.text.ink,
+            color: r.ink,
             fontSize: bodySize,
             lineHeight,
           },

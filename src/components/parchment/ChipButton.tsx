@@ -17,7 +17,7 @@
  */
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -25,11 +25,12 @@ interface Props {
   active: boolean;
   onPress: () => void;
   badge?: string | null;
+  register?: Register;
 }
 
-export default function ChipButton({ label, active, onPress, badge }: Props) {
+export default function ChipButton({ label, active, onPress, badge, register = 'parchment' }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, register), [colors, register]);
   return (
     <Pressable
       style={[styles.chip, active && styles.chipActive]}
@@ -43,7 +44,8 @@ export default function ChipButton({ label, active, onPress, badge }: Props) {
   );
 }
 
-function makeStyles(colors: Theme) {
+function makeStyles(colors: Theme, register: Register) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
     chip: {
       paddingHorizontal: 12,
@@ -51,17 +53,19 @@ function makeStyles(colors: Theme) {
       borderRadius: 4,
       borderWidth: 1,
       borderColor: colors.accent.primary,
-      backgroundColor: colors.bg.parchmentDeep,
+      backgroundColor: r.recess,
       alignItems: 'center',
       minHeight: 36,
       justifyContent: 'center',
     },
+    // Active state is register-invariant: gold fill + dark walnut label
+    // reads correctly on both bright and dark parchment grounds.
     chipActive: {
       backgroundColor: colors.accent.primary,
       borderColor: colors.accent.dark,
     },
     chipLabel: {
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.display,
       fontSize: 13,
     },
@@ -70,7 +74,7 @@ function makeStyles(colors: Theme) {
       fontFamily: fonts.displayBold,
     },
     chipBadge: {
-      color: colors.text.inkSoft,
+      color: r.inkSoft,
       fontFamily: fonts.bodyItalic,
       fontSize: 10,
       marginTop: 2,

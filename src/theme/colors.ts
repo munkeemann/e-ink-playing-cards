@@ -137,3 +137,55 @@ export function useSetThemeName(): (n: ThemeName) => Promise<void> {
  * non-React-component code (helpers outside the component tree).
  */
 export const colors = ARCANE_THEME;
+
+/**
+ * Visual register for parchment-family surfaces.
+ *
+ * 'parchment' (default) — bright parchment ground used on Class A pages
+ *                          (landing, settings, deck list, setup screens).
+ * 'dark'                — dark parchment / candlelit page used on Class B
+ *                          in-game screens (scry, reveal, mtg game,
+ *                          cah game(s), holdem game).
+ *
+ * Both registers share the same gold accent, the same Cinzel/EB Garamond
+ * type families, and the same component shapes. Only the page-ground and
+ * the body-text colors flip between them. Same book, day vs night.
+ */
+export type Register = 'parchment' | 'dark';
+
+/**
+ * Resolve the register-dependent tokens for a parchment-family component.
+ *
+ *   surface   — page or component fill
+ *   recess    — inset/recessed fill (one tone deeper than surface)
+ *   ink       — primary body text color (high contrast on `surface`)
+ *   inkSoft   — secondary body text color (muted on `surface`)
+ *   hairline  — color for thin row/section dividers on `surface`
+ *
+ * Tokens that don't change between registers (accent.primary gold, status
+ * colors, overlays) are read directly from the Theme by callers — they are
+ * NOT routed through this helper. This keeps the diff between the two
+ * registers focused on the page-ground / body-text relationship, which is
+ * the only thing that actually flips.
+ */
+export function registerTokens(
+  theme: Theme,
+  register: Register,
+): { surface: string; recess: string; ink: string; inkSoft: string; hairline: string } {
+  if (register === 'dark') {
+    return {
+      surface: theme.bg.darkParchment,
+      recess: theme.bg.darkParchmentDeep,
+      ink: theme.text.primary,
+      inkSoft: theme.text.secondary,
+      hairline: theme.text.disabled,
+    };
+  }
+  return {
+    surface: theme.bg.parchment,
+    recess: theme.bg.parchmentDeep,
+    ink: theme.text.ink,
+    inkSoft: theme.text.inkSoft,
+    hairline: theme.text.inkSoft,
+  };
+}

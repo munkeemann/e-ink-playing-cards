@@ -15,12 +15,16 @@
 import { useMemo } from 'react';
 import { StyleSheet, TextInput as RNTextInput } from 'react-native';
 import type { TextInputProps } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
-export default function TextInput(props: TextInputProps) {
+interface Props extends TextInputProps {
+  register?: Register;
+}
+
+export default function TextInput({ register = 'parchment', ...props }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, register), [colors, register]);
   return (
     <RNTextInput
       placeholderTextColor={colors.text.muted}
@@ -31,10 +35,11 @@ export default function TextInput(props: TextInputProps) {
   );
 }
 
-function makeStyles(colors: Theme) {
+function makeStyles(colors: Theme, register: Register) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
     input: {
-      backgroundColor: colors.bg.parchmentDeep,
+      backgroundColor: r.recess,
       borderRadius: 4,
       borderWidth: 1,
       borderColor: colors.accent.primary,
@@ -42,7 +47,7 @@ function makeStyles(colors: Theme) {
       paddingVertical: 10,
       fontFamily: fonts.body,
       fontSize: 16,
-      color: colors.text.ink,
+      color: r.ink,
     },
   });
 }

@@ -13,18 +13,19 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
   title: string;
   hint?: string;
   children: ReactNode;
+  register?: Register;
 }
 
-export default function Section({ title, hint, children }: Props) {
+export default function Section({ title, hint, children, register = 'parchment' }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, register), [colors, register]);
   return (
     <View style={styles.section}>
       <Text style={styles.title}>{title}</Text>
@@ -34,11 +35,12 @@ export default function Section({ title, hint, children }: Props) {
   );
 }
 
-function makeStyles(colors: Theme) {
+function makeStyles(colors: Theme, register: Register) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
     section: { marginBottom: 24 },
     title: {
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.display,
       fontSize: 13,
       textTransform: 'uppercase',
@@ -46,16 +48,16 @@ function makeStyles(colors: Theme) {
       marginBottom: 6,
     },
     hint: {
-      color: colors.text.inkSoft,
+      color: r.inkSoft,
       fontSize: 12,
       lineHeight: 18,
       marginBottom: 8,
     },
     body: {
       borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: colors.text.inkSoft,
+      borderTopColor: r.hairline,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.text.inkSoft,
+      borderBottomColor: r.hairline,
     },
   });
 }

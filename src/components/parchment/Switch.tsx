@@ -1,30 +1,35 @@
 /**
  * parchment/Switch — RN Switch with the ARCANE parchment palette baked in.
  *
- *   trackColor:
- *     off → text.inkSoft (#3D2E1C dark ink rail)
- *     on  → accent.dark  (#8A7340 antique gold rail)
- *   thumbColor: bg.parchment (cream pip, constant in both states)
+ *   register='parchment' (default)
+ *     trackColor: off → text.inkSoft (#3D2E1C dark ink rail)
+ *                 on  → accent.dark  (#8A7340 antique gold rail)
+ *     thumbColor: bg.parchment (cream pip)
  *
- * Use anywhere a normal RN Switch would appear inside a parchment page.
+ *   register='dark'
+ *     trackColor: off → text.disabled (#5C523F faint brown rail)
+ *                 on  → accent.dark   (same antique gold rail)
+ *     thumbColor: bg.parchment (same cream pip — pops on dark ground)
  */
 import { Switch as RNSwitch } from 'react-native';
-import { useTheme } from '../../theme/colors';
+import { Register, registerTokens, useTheme } from '../../theme/colors';
 
 interface Props {
   value: boolean;
   onValueChange: (v: boolean) => void;
   disabled?: boolean;
+  register?: Register;
 }
 
-export default function Switch({ value, onValueChange, disabled }: Props) {
+export default function Switch({ value, onValueChange, disabled, register = 'parchment' }: Props) {
   const colors = useTheme();
+  const r = registerTokens(colors, register);
   return (
     <RNSwitch
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
-      trackColor={{ false: colors.text.inkSoft, true: colors.accent.dark }}
+      trackColor={{ false: r.hairline, true: colors.accent.dark }}
       thumbColor={colors.bg.parchment}
     />
   );

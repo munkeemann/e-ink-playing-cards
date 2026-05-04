@@ -17,7 +17,7 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -26,6 +26,7 @@ interface Props {
   onPress?: () => void;
   chevron?: boolean;
   showHairline?: boolean;
+  register?: Register;
 }
 
 export default function Row({
@@ -34,9 +35,13 @@ export default function Row({
   onPress,
   chevron = true,
   showHairline = true,
+  register = 'parchment',
 }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors, showHairline), [colors, showHairline]);
+  const styles = useMemo(
+    () => makeStyles(colors, register, showHairline),
+    [colors, register, showHairline],
+  );
 
   const inner = (
     <>
@@ -59,7 +64,8 @@ export default function Row({
   return <View style={styles.row}>{inner}</View>;
 }
 
-function makeStyles(colors: Theme, showHairline: boolean) {
+function makeStyles(colors: Theme, register: Register, showHairline: boolean) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
     row: {
       flexDirection: 'row',
@@ -68,15 +74,15 @@ function makeStyles(colors: Theme, showHairline: boolean) {
       paddingVertical: 14,
       backgroundColor: 'transparent',
       borderBottomWidth: showHairline ? StyleSheet.hairlineWidth : 0,
-      borderBottomColor: colors.text.inkSoft,
+      borderBottomColor: r.hairline,
     },
     rowPressed: {
-      backgroundColor: colors.bg.parchmentDeep,
+      backgroundColor: r.recess,
     },
     iconWrap: { marginRight: 12 },
     label: {
       flex: 1,
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.body,
       fontSize: 16,
     },

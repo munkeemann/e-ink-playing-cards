@@ -15,7 +15,7 @@ import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { Theme, useTheme } from '../../theme/colors';
+import { Register, Theme, registerTokens, useTheme } from '../../theme/colors';
 import { fonts } from '../../theme/fonts';
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
+  register?: Register;
 }
 
 export default function Button({
@@ -32,9 +33,10 @@ export default function Button({
   disabled = false,
   style,
   children,
+  register = 'parchment',
 }: Props) {
   const colors = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const styles = useMemo(() => makeStyles(colors, register), [colors, register]);
   const isPrimary = variant === 'primary';
 
   return (
@@ -55,8 +57,11 @@ export default function Button({
   );
 }
 
-function makeStyles(colors: Theme) {
+function makeStyles(colors: Theme, register: Register) {
+  const r = registerTokens(colors, register);
   return StyleSheet.create({
+    // Primary is register-invariant: gold fill + dark walnut label reads
+    // correctly on both bright and dark parchment grounds.
     primary: {
       backgroundColor: colors.accent.primary,
       borderRadius: 4,
@@ -74,7 +79,7 @@ function makeStyles(colors: Theme) {
       letterSpacing: 0.5,
     },
     secondary: {
-      backgroundColor: colors.bg.parchmentDeep,
+      backgroundColor: r.recess,
       borderRadius: 4,
       borderWidth: 1,
       borderColor: colors.accent.primary,
@@ -84,7 +89,7 @@ function makeStyles(colors: Theme) {
       justifyContent: 'center',
     },
     secondaryLabel: {
-      color: colors.text.ink,
+      color: r.ink,
       fontFamily: fonts.display,
       fontSize: 16,
     },

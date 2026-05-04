@@ -13,17 +13,23 @@
 import { View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { useTheme } from '../../theme/colors';
+import { Register, registerTokens, useTheme } from '../../theme/colors';
 
 interface Props {
   width?: number;
   style?: StyleProp<ViewStyle>;
+  register?: Register;
 }
 
-export default function Fleuron({ width = 220, style }: Props) {
+export default function Fleuron({ width = 220, style, register = 'parchment' }: Props) {
   const colors = useTheme();
+  const r = registerTokens(colors, register);
   const gold = colors.accent.primary;
-  const sepia = colors.divider;
+  // Rule color matches the register-resolved hairline so the divider reads
+  // as a faint sepia line on parchment AND a faint warm-grey line on dark
+  // parchment. On bright parchment this resolves to the same #3D2E1C value
+  // as the previous direct `colors.divider` reference.
+  const sepia = r.hairline;
   const cx = width / 2;
   const cy = 7;
   const halfGap = 14;
