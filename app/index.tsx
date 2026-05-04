@@ -222,8 +222,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
 
   settingsBtn: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 28,
+    right: 28,
     padding: 8,
     zIndex: 10,
   },
