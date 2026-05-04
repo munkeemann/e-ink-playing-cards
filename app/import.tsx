@@ -16,7 +16,7 @@ import { CardInstance, Deck, TokenTemplate } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
 import TomePageFrame from '../src/components/TomePageFrame';
-import { Button, Fleuron, TextInput } from '../src/components/parchment';
+import { Button, DropCap, Fleuron, TextInput } from '../src/components/parchment';
 
 interface DeckEntry {
   name: string;
@@ -325,9 +325,9 @@ export default function ImportDeckScreen() {
           />
 
           <Text style={styles.label}>Deck List</Text>
-          <Text style={styles.hint}>
-            One card per line: "1 Card Name" or "1 Card Name (SET) 123". First line is the commander; mark partner commanders with "*CMDR*" suffix on each.
-          </Text>
+          <DropCap bodySize={13} containerStyle={styles.deckListIntro}>
+            {'One card per line: "1 Card Name" or "1 Card Name (SET) 123". First line is the commander; mark partner commanders with "*CMDR*" suffix on each.'}
+          </DropCap>
           <TextInput
             value={deckList}
             onChangeText={setDeckList}
@@ -403,5 +403,9 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     alignItems: 'center',
     marginTop: 18,
     marginBottom: 0,
+  },
+
+  deckListIntro: {
+    marginBottom: 8,
   },
 }); }

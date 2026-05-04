@@ -6,3 +6,4 @@ export { default as TextInput } from './TextInput';
 export { default as Row } from './Row';
 export { default as ChipButton } from './ChipButton';
 export { default as Fleuron } from './Fleuron';
+export { default as DropCap } from './DropCap';
