@@ -13,6 +13,9 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { getDeck, saveDeck } from '../src/storage/deckStorage';
 import { CardInstance, Deck } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
+import TomePageFrameDark from '../src/components/TomePageFrameDark';
+import { Button } from '../src/components/parchment';
 
 export default function RevealScreen() {
   const colors = useTheme();
@@ -73,8 +76,8 @@ export default function RevealScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
+    <TomePageFrameDark>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Reveal — Top {N}</Text>
           <Text style={styles.sectionHint}>Reorder with ▲▼ · Long press art for full view</Text>
@@ -103,15 +106,15 @@ export default function RevealScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
-        <Pressable style={styles.confirmBtn} onPress={handleConfirm}>
-          <Text style={styles.confirmText}>✓ Confirm Order</Text>
-        </Pressable>
+        <Button variant="secondary" register="dark" onPress={() => router.back()} style={styles.footerBtn}>
+          Cancel
+        </Button>
+        <Button register="dark" onPress={handleConfirm} style={styles.footerBtn}>
+          ✓  Confirm Order
+        </Button>
       </View>
 
-      {/* Full-art overlay (long press) */}
+      {/* Full-art overlay (long press) — kept full-bleed dark, untouched */}
       <Modal visible={artCard !== null} transparent animationType="fade" onRequestClose={() => setArtCard(null)}>
         <Pressable style={styles.artBackdrop} onPress={() => setArtCard(null)}>
           {artCard?.imagePath ? (
@@ -119,51 +122,71 @@ export default function RevealScreen() {
           ) : null}
         </Pressable>
       </Modal>
-    </View>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16 },
+
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingTop: 12,
-    paddingBottom: 6,
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: 1,
-    borderColor: colors.text.muted,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.disabled,
   },
-  sectionTitle: { color: colors.accent.primary, fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  sectionHint: { color: colors.text.muted, fontSize: 11, marginTop: 2 },
+  sectionTitle: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  sectionHint: {
+    color: colors.text.secondary,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+    marginTop: 4,
+  },
+
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: colors.bg.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.text.muted,
+    borderBottomColor: colors.text.disabled,
     gap: 10,
   },
   moveBtn: { paddingHorizontal: 6, paddingVertical: 4 },
-  moveBtnText: { color: colors.text.secondary, fontSize: 16 },
+  moveBtnText: { color: colors.accent.dark, fontSize: 16 },
   moveBtnDisabled: { color: colors.text.disabled },
-  cardThumb: { width: 44, height: 60, borderRadius: 4 },
-  cardThumbPlaceholder: { backgroundColor: colors.text.muted },
+  cardThumb: {
+    width: 44,
+    height: 60,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.dark,
+  },
+  cardThumbPlaceholder: { backgroundColor: colors.bg.darkParchmentDeep },
   cardNameContainer: { flex: 1 },
-  cardName: { color: colors.text.primary, fontSize: 15 },
+  cardName: {
+    color: colors.text.primary,
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
+
   footer: {
     flexDirection: 'row',
     gap: 10,
-    padding: 14,
-    backgroundColor: colors.bg.surface,
-    borderTopWidth: 1,
-    borderColor: colors.text.muted,
+    marginTop: 8,
   },
-  cancelBtn: { flex: 1, paddingVertical: 15, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.text.muted },
-  cancelText: { color: colors.text.muted, fontSize: 16 },
-  confirmBtn: { flex: 1, backgroundColor: colors.accent.dark, borderRadius: 10, paddingVertical: 15, alignItems: 'center' },
-  confirmText: { color: colors.accent.primary, fontSize: 16, fontWeight: '800' },
+  footerBtn: { flex: 1 },
+
+  // Full-art viewer modal — full-bleed dark backdrop is correct for an
+  // art viewer; left untouched.
   artBackdrop: { flex: 1, backgroundColor: colors.overlay.darker, alignItems: 'center', justifyContent: 'center' },
   artFull: { width: '90%', height: '80%' },
 }); }
