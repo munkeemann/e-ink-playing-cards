@@ -19,6 +19,9 @@ import { getRegisteredSleeves } from '../../src/api/piServer';
 import { CahMaxsGameState, CahMaxsSleeveUpdate } from '../../src/types/cah_maxs';
 import CardRenderer, { CardRendererRef } from '../../src/shared/CardRenderer';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrameDark from '../../src/components/TomePageFrameDark';
+import { Button } from '../../src/components/parchment';
 
 const CAPTURE_TIMEOUT_MS = 3000;
 
@@ -82,9 +85,11 @@ export default function CahMaxsGameScreen() {
 
   if (!state) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
-      </View>
+      <TomePageFrameDark>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent.primary} size="large" />
+        </View>
+      </TomePageFrameDark>
     );
   }
 
@@ -128,102 +133,96 @@ export default function CahMaxsGameScreen() {
   const dealLabel = phase === 'pre_deal' ? 'Deal Round 1' : `Next Round (${round + 1})`;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <TomePageFrameDark>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
-      {/* Off-screen card renderer for JPEG capture */}
-      <CardRenderer ref={rendererRef} />
+        {/* Off-screen card renderer for JPEG capture */}
+        <CardRenderer ref={rendererRef} />
 
-      {/* Phase header */}
-      <View style={styles.phaseRow}>
-        <View style={styles.phaseBadge}>
-          <Text style={styles.phaseText}>{phaseLabel}</Text>
+        {/* Phase header */}
+        <View style={styles.phaseRow}>
+          <View style={styles.phaseBadge}>
+            <Text style={styles.phaseText}>{phaseLabel}</Text>
+          </View>
+          <Text style={styles.sleeveInfo}>
+            Round {round} · {playerCount}p × {K}  ·  {sleeveCount} sleeves
+          </Text>
         </View>
-        <Text style={styles.sleeveInfo}>
-          Round {round} · {playerCount}p × {K}  ·  {sleeveCount} sleeves
-        </Text>
-      </View>
 
-      {/* Black card prompt — echo of what's on sleeve 1 */}
-      {currentPrompt && (
-        <View style={styles.blackCard}>
-          <Text style={styles.blackCardText}>{currentPrompt.text}</Text>
-          {currentPrompt.pick > 1 && (
-            <Text style={styles.pickBadge}>PICK {currentPrompt.pick}</Text>
-          )}
-        </View>
-      )}
-
-      {/* Deal / Next Round button */}
-      <Pressable
-        style={({ pressed }) => [styles.advanceBtn, (pressed || busy) && styles.advanceBtnPressed]}
-        onPress={handleDeal}
-        disabled={busy}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.bg.app} />
-        ) : (
-          <Text style={styles.advanceBtnLabel}>{dealLabel}  →</Text>
+        {/* Black card prompt — preserved with the CAH-physical-card colors
+            (#050505 + #ffffff). Adds a thin accent.dark border so it
+            integrates as a framed prompt on the dark-parchment page. */}
+        {currentPrompt && (
+          <View style={styles.blackCard}>
+            <Text style={styles.blackCardText}>{currentPrompt.text}</Text>
+            {currentPrompt.pick > 1 && (
+              <Text style={styles.pickBadge}>PICK {currentPrompt.pick}</Text>
+            )}
+          </View>
         )}
-      </Pressable>
 
-      {/* End game */}
-      <Pressable style={styles.endBtn} onPress={handleEnd}>
-        <Text style={styles.endBtnLabel}>End Game</Text>
-      </Pressable>
+        {/* Deal / Next Round button */}
+        <Button onPress={handleDeal} disabled={busy} register="dark">
+          {busy ? '…' : `${dealLabel}  →`}
+        </Button>
 
-    </ScrollView>
+        {/* End game */}
+        <Button variant="secondary" register="dark" onPress={handleEnd} style={styles.endBtn}>
+          End Game
+        </Button>
+
+      </ScrollView>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 16, paddingBottom: 40, gap: 12 },
-  loading: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  content: { paddingBottom: 16, gap: 12 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   phaseRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   phaseBadge: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 6,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
-  phaseText: { color: colors.accent.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
-  sleeveInfo: { color: colors.text.muted, fontSize: 12 },
+  phaseText: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
+  },
+  sleeveInfo: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
 
-  // CAH-specific: see app/cah/game.tsx for rationale on the black-card colors.
+  // CAH-specific: see app/cah/game.tsx for rationale on the black-card
+  // colors (preserved across the dark-parchment migration). Border
+  // migrated to accent.dark so it integrates as a framed prompt.
   blackCard: {
     backgroundColor: '#050505',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.accent.dark,
     padding: 16,
     minHeight: 80,
     justifyContent: 'center',
   },
   blackCardText: { color: '#ffffff', fontSize: 16, fontWeight: '600', lineHeight: 22 },
-  pickBadge: { color: colors.text.muted, fontSize: 11, marginTop: 8, fontWeight: '700', letterSpacing: 1 },
-
-  advanceBtn: {
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  advanceBtnPressed: { opacity: 0.7 },
-  advanceBtnLabel: { color: colors.bg.app, fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
-
-  endBtn: {
+  pickBadge: {
+    color: '#ffffff',
+    opacity: 0.6,
+    fontFamily: fonts.display,
+    fontSize: 11,
     marginTop: 8,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
+    letterSpacing: 1.5,
   },
-  endBtnLabel: { color: colors.text.muted, fontSize: 14, fontWeight: '600' },
+
+  endBtn: { marginTop: 8 },
 }); }

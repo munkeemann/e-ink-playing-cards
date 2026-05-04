@@ -22,6 +22,9 @@ import { getRegisteredSleeves } from '../../src/api/piServer';
 import { CahGameState } from '../../src/types/cah';
 import CardRenderer, { CardRendererRef } from '../../src/shared/CardRenderer';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrameDark from '../../src/components/TomePageFrameDark';
+import { Button } from '../../src/components/parchment';
 
 const CAPTURE_TIMEOUT_MS = 3000;
 
@@ -90,9 +93,11 @@ export default function CahGameScreen() {
 
   if (!state) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
-      </View>
+      <TomePageFrameDark>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent.primary} size="large" />
+        </View>
+      </TomePageFrameDark>
     );
   }
 
@@ -197,46 +202,41 @@ export default function CahGameScreen() {
   const hideAdvance = false;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <TomePageFrameDark>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
-      {/* Off-screen card renderer */}
-      <CardRenderer ref={rendererRef} />
+        {/* Off-screen card renderer */}
+        <CardRenderer ref={rendererRef} />
 
-      {/* Phase header */}
-      <View style={styles.phaseRow}>
-        <View style={styles.phaseBadge}>
-          <Text style={styles.phaseText}>{phaseLabel}</Text>
+        {/* Phase header */}
+        <View style={styles.phaseRow}>
+          <View style={styles.phaseBadge}>
+            <Text style={styles.phaseText}>{phaseLabel}</Text>
+          </View>
+          <Text style={styles.sleeveInfo}>{sleeveCount} sleeves</Text>
         </View>
-        <Text style={styles.sleeveInfo}>{sleeveCount} sleeves</Text>
-      </View>
 
-      {/* Black card prompt */}
-      <View style={styles.blackCard}>
-        <Text style={styles.blackCardText}>{currentBlackCard.text}</Text>
-        {currentBlackCard.pick > 1 && (
-          <Text style={styles.pickBadge}>PICK {currentBlackCard.pick}</Text>
-        )}
-      </View>
-
-      {/* Advance button (hidden during submissions and winner-pick) */}
-      {!hideAdvance && (
-        <Pressable
-          style={({ pressed }) => [styles.advanceBtn, (pressed || busy) && styles.advanceBtnPressed]}
-          onPress={handleAdvance}
-          disabled={busy}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.bg.app} />
-          ) : (
-            <Text style={styles.advanceBtnLabel}>{buttonLabel}  →</Text>
+        {/* Black card prompt — preserved with the CAH-physical-card colors
+            (#050505 + #ffffff). Adds a thin accent.dark border so it
+            integrates as a framed prompt on the dark-parchment page. */}
+        <View style={styles.blackCard}>
+          <Text style={styles.blackCardText}>{currentBlackCard.text}</Text>
+          {currentBlackCard.pick > 1 && (
+            <Text style={styles.pickBadge}>PICK {currentBlackCard.pick}</Text>
           )}
-        </Pressable>
-      )}
+        </View>
 
-      {/* Players */}
-      <Text style={styles.sectionHeader}>Players</Text>
-      <View style={styles.tableCard}>
-        {Array.from({ length: playerCount }, (_, p) => {
+        {/* Advance button (hidden during submissions and winner-pick) */}
+        {!hideAdvance && (
+          <Button onPress={handleAdvance} disabled={busy} register="dark">
+            {busy ? '…' : `${buttonLabel}  →`}
+          </Button>
+        )}
+
+        {/* Players */}
+        <Text style={styles.sectionHeader}>Players</Text>
+        <View style={styles.tableCard}>
+          {Array.from({ length: playerCount }, (_, p) => {
           // CAH_RULES_DISABLED: isCzar, hasSubmitted, isWinner, submittedSlot, revealPos, isRevealed
           // — players/turns, submission tracking, voting, czar rotation, round winners
 
@@ -271,79 +271,89 @@ export default function CahGameScreen() {
         })}
       </View>
 
-      {/* CAH_RULES_DISABLED: separate "Next round" button after winner picked (round winners) */}
-      {/* {phase === 'winner' && roundWinner !== null && (
-        <Pressable ... Next Round → </Pressable>
-      )} */}
+        {/* CAH_RULES_DISABLED: separate "Next round" button after winner picked (round winners) */}
+        {/* {phase === 'winner' && roundWinner !== null && (
+          <Pressable ... Next Round → </Pressable>
+        )} */}
 
-      {/* End game */}
-      <Pressable style={styles.endBtn} onPress={handleEnd}>
-        <Text style={styles.endBtnLabel}>End Game</Text>
-      </Pressable>
+        {/* End game */}
+        <Button variant="secondary" register="dark" onPress={handleEnd} style={styles.endBtn}>
+          End Game
+        </Button>
 
-    </ScrollView>
+      </ScrollView>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 16, paddingBottom: 40, gap: 12 },
-  loading: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  content: { paddingBottom: 16, gap: 12 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   phaseRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   phaseBadge: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 6,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
-  phaseText: { color: colors.accent.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
-  sleeveInfo: { color: colors.text.muted, fontSize: 12 },
+  phaseText: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
+  },
+  sleeveInfo: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
 
   // CAH-specific: the black-prompt-card visual matches the physical Cards
-  // Against Humanity card. Pure-black + neutral-grey border are intentional
-  // game-element colors, not theme tokens.
+  // Against Humanity card. Pure-black + white text are intentional
+  // game-element colors, not theme tokens — preserved across the
+  // dark-parchment migration. The border is migrated to accent.dark so
+  // it integrates as a framed prompt on the dark page.
   blackCard: {
     backgroundColor: '#050505',
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2a2a2a',
+    borderColor: colors.accent.dark,
     padding: 16,
     minHeight: 80,
     justifyContent: 'center',
   },
   blackCardText: { color: '#ffffff', fontSize: 16, fontWeight: '600', lineHeight: 22 },
-  pickBadge: { color: colors.text.muted, fontSize: 11, marginTop: 8, fontWeight: '700', letterSpacing: 1 },
-
-  advanceBtn: {
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  pickBadge: {
+    color: '#ffffff',
+    opacity: 0.6,
+    fontFamily: fonts.display,
+    fontSize: 11,
+    marginTop: 8,
+    letterSpacing: 1.5,
   },
-  advanceBtnPressed: { opacity: 0.7 },
-  advanceBtnLabel: { color: colors.bg.app, fontSize: 17, fontWeight: '800', letterSpacing: 0.5 },
 
   sectionHeader: {
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginTop: 4,
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 8,
   },
 
   tableCard: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.dark,
     overflow: 'hidden',
   },
-  rowBorder: { borderTopWidth: 1, borderTopColor: colors.bg.elevated },
-  winnerRow: { backgroundColor: colors.bg.surface },
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.text.disabled },
+  winnerRow: { backgroundColor: colors.bg.darkParchmentDeep },
 
   playerRow: {
     paddingHorizontal: 14,
@@ -351,75 +361,73 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     gap: 8,
   },
   playerMeta: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  playerLabel: { color: colors.text.secondary, fontSize: 13, fontWeight: '700', flex: 1 },
+  playerLabel: {
+    color: colors.text.primary,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    flex: 1,
+  },
   winnerLabel: { color: colors.status.success },
-  playerScore: { color: colors.text.muted, fontSize: 12 },
+  playerScore: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 12 },
   submittedTag: {
     color: colors.accent.primary,
+    fontFamily: fonts.display,
     fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: colors.bg.surface,
+    backgroundColor: colors.bg.darkParchmentDeep,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
 
+  // CAH_RULES_DISABLED: hand/submit/cardChip/winPick styles below remain
+  // for the rules-disabled paths in this file. Migrated to dark-register
+  // tokens for consistency in case the rules ever come back.
   handRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
-  handCount: { color: colors.text.muted, fontSize: 12, fontWeight: '600' },
+  handCount: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 12 },
   submitBtn: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
-    backgroundColor: colors.bg.elevated,
+    borderRadius: 4,
+    backgroundColor: colors.bg.darkParchment,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
-  submitBtnPressed: { backgroundColor: colors.bg.elevated, borderColor: colors.accent.primary },
-  submitBtnText: { color: colors.accent.primary, fontSize: 12, fontWeight: '700' },
+  submitBtnPressed: { backgroundColor: colors.bg.darkParchment, borderColor: colors.accent.primary },
+  submitBtnText: { color: colors.accent.primary, fontFamily: fonts.display, fontSize: 12 },
   cardChip: {
     minWidth: 44,
     maxWidth: 90,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: colors.bg.elevated,
+    borderRadius: 4,
+    backgroundColor: colors.bg.darkParchment,
     borderWidth: 1,
     borderColor: colors.accent.dark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardChipSubmitted: { borderColor: colors.accent.primary, backgroundColor: colors.bg.surface },
-  cardChipRevealed: { borderColor: colors.status.success, backgroundColor: colors.bg.surface, maxWidth: 200 },
-  cardChipPressed: { backgroundColor: colors.bg.elevated, borderColor: colors.accent.primary },
-  cardChipText: { color: colors.text.muted, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  cardChipSubmitted: { borderColor: colors.accent.primary, backgroundColor: colors.bg.darkParchmentDeep },
+  cardChipRevealed: { borderColor: colors.status.success, backgroundColor: colors.bg.darkParchmentDeep, maxWidth: 200 },
+  cardChipPressed: { backgroundColor: colors.bg.darkParchment, borderColor: colors.accent.primary },
+  cardChipText: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 12, textAlign: 'center' },
   cardChipTextRevealed: { color: colors.text.primary, fontSize: 11 },
 
   winPickBtn: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: colors.bg.elevated,
+    borderRadius: 4,
+    backgroundColor: colors.bg.darkParchment,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
-  winPickBtnPressed: { backgroundColor: colors.bg.elevated },
-  winPickBtnWon: { backgroundColor: colors.bg.surface, borderColor: colors.status.success },
-  winPickBtnText: { color: colors.text.secondary, fontSize: 13, fontWeight: '700' },
+  winPickBtnPressed: { backgroundColor: colors.bg.darkParchment },
+  winPickBtnWon: { backgroundColor: colors.bg.darkParchmentDeep, borderColor: colors.status.success },
+  winPickBtnText: { color: colors.text.primary, fontFamily: fonts.display, fontSize: 13 },
   winPickBtnTextWon: { color: colors.status.success },
 
-  endBtn: {
-    marginTop: 8,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  endBtnLabel: { color: colors.text.muted, fontSize: 14, fontWeight: '600' },
+  endBtn: { marginTop: 8 },
 }); }
