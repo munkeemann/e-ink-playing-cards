@@ -16,7 +16,7 @@ import { CardInstance, Deck, TokenTemplate } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
 import TomePageFrame from '../src/components/TomePageFrame';
-import { Button, TextInput } from '../src/components/parchment';
+import { Button, Fleuron, TextInput } from '../src/components/parchment';
 
 interface DeckEntry {
   name: string;
@@ -338,6 +338,10 @@ export default function ImportDeckScreen() {
             style={styles.textArea}
           />
 
+          <View style={styles.fleuronWrap}>
+            <Fleuron width={260} />
+          </View>
+
           <Text style={styles.label}>Tokens (optional)</Text>
           <Text style={styles.hint}>
             One per line — art will be pre-fetched and cached.
@@ -394,4 +398,10 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   progressText: { color: colors.text.ink, fontFamily: fonts.body, fontSize: 15 },
   progressNum: { color: colors.accent.dark, fontFamily: fonts.bodyBold },
   buttonWrap: { marginTop: 28 },
+
+  fleuronWrap: {
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 0,
+  },
 }); }

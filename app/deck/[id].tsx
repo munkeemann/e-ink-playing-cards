@@ -21,7 +21,7 @@ import { AppSettings, CardInstance, Deck, TokenTemplate } from '../../src/types'
 import { Theme, useTheme } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import TomePageFrame from '../../src/components/TomePageFrame';
-import { Button } from '../../src/components/parchment';
+import { Button, Fleuron } from '../../src/components/parchment';
 
 function ArtPopupContent({ card }: { card: CardInstance | null }) {
   console.log('[ArtPopup] imagePath:', card?.imagePath);
@@ -397,6 +397,10 @@ export default function DeckPreviewScreen() {
         )}
 
         {/* Manage Tokens section */}
+        <View style={styles.fleuronWrap}>
+          <Fleuron width={260} />
+        </View>
+
         <View style={[styles.sectionHeader, viewMode === 'gallery' && { marginTop: 0 }]}>
           <Text style={styles.sectionTitle}>Token Library</Text>
           <Pressable style={styles.addTokenBtn} onPress={() => setAddTokenVisible(true)}>
@@ -723,17 +727,20 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     marginLeft: 6,
   },
 
-  // Section header (Token Library)
+  // Section header (Token Library) — preceded by a Fleuron divider so the
+  // top hairline is no longer needed (the fleuron provides the seam).
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 4,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 10,
-    marginTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.text.inkSoft,
+  },
+  fleuronWrap: {
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 4,
   },
   sectionTitle: {
     color: colors.text.ink,

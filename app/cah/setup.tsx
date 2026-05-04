@@ -30,7 +30,7 @@ import { getPromptsForPacks, getResponsesForPacks } from '../../src/cah/CahConte
 import { Theme, useTheme } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import TomePageFrame from '../../src/components/TomePageFrame';
-import { Button, ChipButton, Stepper } from '../../src/components/parchment';
+import { Button, ChipButton, Fleuron, Stepper } from '../../src/components/parchment';
 
 type Ruleset = 'official' | 'maxs';
 
@@ -318,6 +318,10 @@ export default function CahSetupScreen() {
           </>
         )}
 
+        <View style={styles.fleuronWrap}>
+          <Fleuron width={260} />
+        </View>
+
         {/* Pack selector — categorized accordion */}
         <View style={styles.packsSection}>
           <View style={styles.packsHeaderRow}>
@@ -505,4 +509,10 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
 
   startBtnWrap: { marginTop: 8 },
+
+  fleuronWrap: {
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 4,
+  },
 }); }

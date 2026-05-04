@@ -12,7 +12,7 @@ import { AppSettings } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
 import TomePageFrame from '../src/components/TomePageFrame';
-import { Button, Section, Stepper, Switch } from '../src/components/parchment';
+import { Button, Fleuron, Section, Stepper, Switch } from '../src/components/parchment';
 
 const ZONE_OPTIONS: { id: string; label: string; note?: string }[] = [
   { id: 'LIB',   label: 'Library (top card)' },
@@ -115,6 +115,10 @@ export default function SettingsScreen() {
           ))}
         </Section>
 
+        <View style={styles.fleuronWrap}>
+          <Fleuron width={260} />
+        </View>
+
         <Section title="Developer">
           <View style={styles.row}>
             <View style={styles.rowLabelCol}>
@@ -195,5 +199,11 @@ function makeStyles(colors: Theme) {
     },
 
     saveWrap: { marginTop: 8 },
+
+    fleuronWrap: {
+      alignItems: 'center',
+      marginTop: 4,
+      marginBottom: 18,
+    },
   });
 }
