@@ -12,8 +12,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import type { LayoutChangeEvent } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { assignSleeveIds, beginGame, getRegisteredSleeves } from '../../src/api/piServer';
 import { clearMemo } from '../../src/api/sleeveService';
@@ -97,8 +95,6 @@ export default function DeckPreviewScreen() {
   const [pickerCard, setPickerCard] = useState<CardInstance | null>(null);
   const [printings, setPrintings] = useState<ScryfallPrinting[]>([]);
   const [printingsLoading, setPrintingsLoading] = useState(false);
-
-  const [bannerSize, setBannerSize] = useState<{ w: number; h: number } | null>(null);
 
   const [addTokenVisible, setAddTokenVisible] = useState(false);
   const [newTokenName, setNewTokenName] = useState('');
@@ -307,74 +303,48 @@ export default function DeckPreviewScreen() {
 
   return (
     <TomePageFrame>
-      <View
-        style={styles.banner}
-        onLayout={(e: LayoutChangeEvent) => {
-          const { width, height } = e.nativeEvent.layout;
-          if (!bannerSize || bannerSize.w !== width || bannerSize.h !== height) {
-            setBannerSize({ w: width, h: height });
-          }
-        }}
-      >
+      <View style={styles.header}>
         {deck.commanderImagePath ? (
           <Image
             source={{ uri: deck.commanderImagePath }}
-            style={styles.bannerImg}
+            style={styles.headerArt}
+            resizeMode="cover"
           />
         ) : (
-          <View style={[styles.bannerImg, styles.bannerImgPlaceholder]} />
+          <View style={[styles.headerArt, styles.headerArtPlaceholder]} />
         )}
-        {bannerSize && (
-          <Svg
-            width={bannerSize.w}
-            height={bannerSize.h}
-            style={StyleSheet.absoluteFillObject}
-            pointerEvents="none"
-          >
-            <Defs>
-              <LinearGradient id="bannerFade" x1="0" y1="0" x2="0" y2={bannerSize.h}>
-                <Stop offset="0.55" stopColor="#000" stopOpacity="0" />
-                <Stop offset="1" stopColor="#000" stopOpacity="0.75" />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width={bannerSize.w} height={bannerSize.h} fill="url(#bannerFade)" />
-          </Svg>
-        )}
-        <View style={styles.bannerOverlay} pointerEvents="none">
+        <View style={styles.headerInfo}>
           <Text style={styles.deckTitle} numberOfLines={2}>{deck.name}</Text>
           {commanders.map(cmdr => (
             <Text key={cmdr.displayName} style={styles.commanderName}>{cmdr.displayName}</Text>
           ))}
           <Text style={styles.deckMeta}>{deck.cards.length} cards total</Text>
+          <Text style={[styles.devModeLabel, settings.devMode && styles.devModeLabelActive]}>
+            {settings.devMode ? 'Showing actual deck order' : 'Deck order hidden'}
+          </Text>
+          {commanders.length === 2 && !gameInProgress && (
+            <Pressable
+              onPress={async () => {
+                const [a, b] = commanders;
+                const newCards = deck.cards.map(c => {
+                  if (c === a) return b;
+                  if (c === b) return a;
+                  return c;
+                });
+                const updated: Deck = {
+                  ...deck,
+                  cards: newCards,
+                  commanderImagePath: b.imagePath || deck.commanderImagePath,
+                };
+                await saveDeck(updated);
+                setDeck(updated);
+              }}
+              style={styles.swapPartnersBtn}
+            >
+              <Text style={styles.swapPartnersBtnText}>↕ Swap commanders</Text>
+            </Pressable>
+          )}
         </View>
-      </View>
-
-      <View style={styles.bannerMeta}>
-        <Text style={[styles.devModeLabel, settings.devMode && styles.devModeLabelActive]}>
-          {settings.devMode ? 'Showing actual deck order' : 'Deck order hidden'}
-        </Text>
-        {commanders.length === 2 && !gameInProgress && (
-          <Pressable
-            onPress={async () => {
-              const [a, b] = commanders;
-              const newCards = deck.cards.map(c => {
-                if (c === a) return b;
-                if (c === b) return a;
-                return c;
-              });
-              const updated: Deck = {
-                ...deck,
-                cards: newCards,
-                commanderImagePath: b.imagePath || deck.commanderImagePath,
-              };
-              await saveDeck(updated);
-              setDeck(updated);
-            }}
-            style={styles.swapPartnersBtn}
-          >
-            <Text style={styles.swapPartnersBtnText}>↕ Swap commanders</Text>
-          </Pressable>
-        )}
       </View>
 
       {/* View toggle */}
@@ -661,65 +631,33 @@ export default function DeckPreviewScreen() {
 function makeStyles(colors: Theme) { return StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Hero commander banner — full-width landscape window into the top of
-  // the card. The banner is 16:9; the inner Image is full-width with the
-  // card's natural ~488/680 aspect (so it renders ~1.39× the banner width
-  // tall), positioned at top:0 and clipped by overflow:hidden — which
-  // anchors the visible region to the TOP of the card (title bar +
-  // illustration), no zoom and no scrim. A small bottom-anchored SVG
-  // gradient fades the bottom 45% of the banner to ~75% black so the
-  // overlaid deck-name / commander-name / cards-count remains legible
-  // without dimming the illustration above.
-  banner: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.accent.primary,
-    overflow: 'hidden',
-    backgroundColor: colors.bg.parchmentDeep,
-    marginBottom: 12,
-  },
-  bannerImg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    aspectRatio: 488 / 680,
-  },
-  bannerImgPlaceholder: { backgroundColor: colors.bg.parchmentDeep },
-  bannerOverlay: {
-    position: 'absolute',
-    left: 14,
-    right: 14,
-    bottom: 12,
-  },
-  bannerMeta: {
+  // Header — sits transparently on parchment, commander art floats with text alongside.
+  header: {
+    flexDirection: 'row',
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.text.inkSoft,
+    gap: 12,
   },
-  // Banner overlay text — sits on the bottom gradient (dark), so colors
-  // are cream/cream-soft rather than ink/inkSoft.
+  headerArt: {
+    width: 80,
+    height: 110,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+  },
+  headerArtPlaceholder: { backgroundColor: colors.bg.parchmentDeep },
+  headerInfo: { flex: 1, justifyContent: 'center', gap: 4 },
   deckTitle: {
-    color: colors.text.primary,
+    color: colors.text.ink,
     fontFamily: fonts.displayBold,
-    fontSize: 22,
-    letterSpacing: 0.3,
+    fontSize: 20,
   },
   commanderName: {
-    color: colors.text.secondary,
+    color: colors.text.inkSoft,
     fontFamily: fonts.bodyItalic,
     fontSize: 13,
-    marginTop: 2,
   },
-  deckMeta: {
-    color: colors.text.secondary,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  // Below the banner — sits on parchment, keeps ink-tone colors.
   swapPartnersBtn: {
     marginTop: 6,
     alignSelf: 'flex-start',
@@ -735,10 +673,16 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: 11,
   },
+  deckMeta: {
+    color: colors.text.inkSoft,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
   devModeLabel: {
     color: colors.text.inkSoft,
     fontFamily: fonts.bodyItalic,
     fontSize: 11,
+    marginTop: 2,
   },
   devModeLabelActive: { color: colors.status.warning },
 
