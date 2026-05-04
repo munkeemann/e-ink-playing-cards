@@ -305,13 +305,11 @@ export default function DeckPreviewScreen() {
     <TomePageFrame>
       <View style={styles.header}>
         {deck.commanderImagePath ? (
-          <View style={styles.headerArt}>
-            <Image
-              source={{ uri: deck.commanderImagePath }}
-              style={styles.headerArtImg}
-              resizeMode="cover"
-            />
-          </View>
+          <Image
+            source={{ uri: deck.commanderImagePath }}
+            style={styles.headerArt}
+            resizeMode="cover"
+          />
         ) : (
           <View style={[styles.headerArt, styles.headerArtPlaceholder]} />
         )}
@@ -641,22 +639,12 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderBottomColor: colors.text.inkSoft,
     gap: 12,
   },
-  // Commander banner art frame. overflow:hidden + an oversized inner Image
-  // (height 2x the frame) lets resizeMode=cover anchor the crop on the top
-  // half of the card — title bar + illustration — instead of centering on
-  // the type line / text box. No scrim is needed; reframing alone makes the
-  // art read as bright and focused.
   headerArt: {
     width: 80,
     height: 110,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.primary,
-    overflow: 'hidden',
-  },
-  headerArtImg: {
-    width: '100%',
-    height: 220,
   },
   headerArtPlaceholder: { backgroundColor: colors.bg.parchmentDeep },
   headerInfo: { flex: 1, justifyContent: 'center', gap: 4 },
