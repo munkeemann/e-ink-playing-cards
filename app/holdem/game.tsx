@@ -27,6 +27,9 @@ import { getRegisteredSleeves } from '../../src/api/piServer';
 import { HoldemGameState, PlayingCard, Suit } from '../../src/types/holdem';
 import { SKIN_ASSETS, skinCardKey } from '../../src/assets/skins/registry';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrameDark from '../../src/components/TomePageFrameDark';
+import { Button } from '../../src/components/parchment';
 
 // Pre-built card JPEG assets (Metro requires static require() calls)
 const CARD_ASSETS: Record<string, number> = {
@@ -239,9 +242,11 @@ export default function HoldemGameScreen() {
 
   if (!state) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.accent.primary} size="large" />
-      </View>
+      <TomePageFrameDark>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent.primary} size="large" />
+        </View>
+      </TomePageFrameDark>
     );
   }
 
@@ -350,122 +355,113 @@ export default function HoldemGameScreen() {
   const sleeveTotal = totalSleeveCount(state.playerCount);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <TomePageFrameDark>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
-      {/* Phase header */}
-      <View style={styles.phaseRow}>
-        <View style={styles.phaseBadge}>
-          <Text style={styles.phaseText}>{phaseLabel}</Text>
-        </View>
-        <Text style={styles.sleeveInfo}>{sleeveTotal} sleeves</Text>
-      </View>
-
-      {/* Advance button */}
-      <Pressable
-        style={({ pressed }) => [styles.advanceBtn, (pressed || busy) && styles.advanceBtnPressed]}
-        onPress={handleAdvance}
-        disabled={busy}
-      >
-        {busy ? (
-          <ActivityIndicator color={colors.bg.app} />
-        ) : (
-          <Text style={styles.advanceBtnLabel}>
-            {PHASE_BUTTON_LABEL[state.phase]}  →
-          </Text>
-        )}
-      </Pressable>
-
-      {/* Players */}
-      <Text style={styles.sectionHeader}>Players</Text>
-      <View style={styles.tableCard}>
-        {players.map((p, i) => (
-          <View
-            key={p.playerNumber}
-            style={[styles.playerRow, i < players.length - 1 && styles.rowBorder]}
-          >
-            <Text style={styles.playerLabel}>Player {p.playerNumber}</Text>
-            <View style={styles.cardPair}>
-              <CardChip card={p.card1} revealed={false} />
-              <CardChip card={p.card2} revealed={false} />
-            </View>
+        {/* Phase header */}
+        <View style={styles.phaseRow}>
+          <View style={styles.phaseBadge}>
+            <Text style={styles.phaseText}>{phaseLabel}</Text>
           </View>
-        ))}
-      </View>
+          <Text style={styles.sleeveInfo}>{sleeveTotal} sleeves</Text>
+        </View>
 
-      {/* Community */}
-      <Text style={styles.sectionHeader}>Community</Text>
-      <View style={styles.tableCard}>
-        <View style={styles.communityRow}>
-          {community.slice(0, 3).map(c => (
-            <View key={c.label} style={styles.communityCell}>
-              <Text style={styles.communityLabel}>{c.label}</Text>
-              <CardChip card={c.card} revealed={c.revealed} />
+        {/* Advance button */}
+        <Button onPress={handleAdvance} disabled={busy} register="dark">
+          {busy ? '…' : `${PHASE_BUTTON_LABEL[state.phase]}  →`}
+        </Button>
+
+        {/* Players */}
+        <Text style={styles.sectionHeader}>Players</Text>
+        <View style={styles.tableCard}>
+          {players.map((p, i) => (
+            <View
+              key={p.playerNumber}
+              style={[styles.playerRow, i < players.length - 1 && styles.rowBorder]}
+            >
+              <Text style={styles.playerLabel}>Player {p.playerNumber}</Text>
+              <View style={styles.cardPair}>
+                <CardChip card={p.card1} revealed={false} />
+                <CardChip card={p.card2} revealed={false} />
+              </View>
             </View>
           ))}
         </View>
-        <View style={[styles.communityRow, styles.rowBorder, styles.communityRowTop]}>
-          {community.slice(3).map(c => (
-            <View key={c.label} style={styles.communityCell}>
-              <Text style={styles.communityLabel}>{c.label}</Text>
-              <CardChip card={c.card} revealed={c.revealed} />
-            </View>
-          ))}
+
+        {/* Community */}
+        <Text style={styles.sectionHeader}>Community</Text>
+        <View style={styles.tableCard}>
+          <View style={styles.communityRow}>
+            {community.slice(0, 3).map(c => (
+              <View key={c.label} style={styles.communityCell}>
+                <Text style={styles.communityLabel}>{c.label}</Text>
+                <CardChip card={c.card} revealed={c.revealed} />
+              </View>
+            ))}
+          </View>
+          <View style={[styles.communityRow, styles.rowBorder, styles.communityRowTop]}>
+            {community.slice(3).map(c => (
+              <View key={c.label} style={styles.communityCell}>
+                <Text style={styles.communityLabel}>{c.label}</Text>
+                <CardChip card={c.card} revealed={c.revealed} />
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
 
-      {/* End game */}
-      <Pressable style={styles.endBtn} onPress={handleEnd}>
-        <Text style={styles.endBtnLabel}>End Game</Text>
-      </Pressable>
+        {/* End game */}
+        <Button variant="secondary" onPress={handleEnd} register="dark" style={styles.endBtn}>
+          End Game
+        </Button>
 
-    </ScrollView>
+      </ScrollView>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: 16, paddingBottom: 40, gap: 12 },
-  loading: { flex: 1, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  content: { paddingBottom: 16, gap: 12 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   phaseRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   phaseBadge: {
     paddingHorizontal: 12,
     paddingVertical: 5,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 6,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.dark,
   },
-  phaseText: { color: colors.accent.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
-  sleeveInfo: { color: colors.text.muted, fontSize: 12 },
-
-  advanceBtn: {
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
+  phaseText: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
   },
-  advanceBtnPressed: { opacity: 0.7 },
-  advanceBtnLabel: { color: colors.bg.app, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  sleeveInfo: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 12,
+  },
 
   sectionHeader: {
-    color: colors.text.secondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginTop: 4,
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginTop: 8,
   },
 
   tableCard: {
-    backgroundColor: colors.bg.surface,
-    borderRadius: 10,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.accent.dark,
     overflow: 'hidden',
   },
-  rowBorder: { borderTopWidth: 1, borderTopColor: colors.bg.elevated },
+  rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.text.disabled },
 
   playerRow: {
     flexDirection: 'row',
@@ -474,21 +470,29 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  playerLabel: { color: colors.text.secondary, fontSize: 14, fontWeight: '600' },
+  playerLabel: {
+    color: colors.text.primary,
+    fontFamily: fonts.body,
+    fontSize: 14,
+  },
   cardPair: { flexDirection: 'row', gap: 8 },
 
   chip: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: colors.bg.elevated,
+    borderRadius: 4,
+    backgroundColor: colors.bg.darkParchment,
     borderWidth: 1,
     borderColor: colors.accent.dark,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipHidden: { borderColor: colors.divider, backgroundColor: 'transparent' },
-  chipText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
+  chipHidden: { borderColor: colors.text.disabled, backgroundColor: 'transparent' },
+  chipText: {
+    color: colors.text.secondary,
+    fontFamily: fonts.displayBold,
+    fontSize: 14,
+  },
 
   communityRow: {
     flexDirection: 'row',
@@ -498,17 +502,12 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
   communityRowTop: { paddingTop: 12 },
   communityCell: { alignItems: 'center', gap: 4 },
-  communityLabel: { color: colors.text.muted, fontSize: 10, letterSpacing: 0.4 },
-
-  endBtn: {
-    marginTop: 8,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
+  communityLabel: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 10,
+    letterSpacing: 0.5,
   },
-  endBtnLabel: { color: colors.text.muted, fontSize: 14, fontWeight: '600' },
+
+  endBtn: { marginTop: 8 },
 }); }
