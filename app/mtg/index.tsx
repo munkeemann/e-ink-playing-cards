@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { router, useFocusEffect } from 'expo-router';
 import { deleteDeck, loadDecks } from '../../src/storage/deckStorage';
 import { Deck } from '../../src/types';
@@ -54,6 +55,9 @@ export default function DeckListScreen() {
       .filter(c => c.place === 'commander')
       .map(c => c.displayName);
     const subtitle = commanderNames.length > 0 ? commanderNames.join(' & ') : null;
+    // Per-tile gradient id — SVG ids are global within a document, so each
+    // FlatList row needs its own to avoid collisions.
+    const gradientId = `tileFade-${item.id}`;
     return (
       <Pressable
         style={styles.tileOuter}
@@ -64,15 +68,25 @@ export default function DeckListScreen() {
           {item.commanderImagePath ? (
             <Image
               source={{ uri: item.commanderImagePath }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
+              style={styles.tileImg}
             />
           ) : (
-            <View style={[StyleSheet.absoluteFill, styles.tilePlaceholder]} />
+            <View style={[styles.tileImg, styles.tilePlaceholder]} />
           )}
-          <View style={[StyleSheet.absoluteFill, styles.tileWash]} />
+          <Svg
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          >
+            <Defs>
+              <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0.55" stopColor="#000" stopOpacity="0" />
+                <Stop offset="1" stopColor="#000" stopOpacity="0.75" />
+              </LinearGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradientId})`} />
+          </Svg>
 
-          <View style={styles.tileContent}>
+          <View style={styles.tileContent} pointerEvents="none">
             <Text style={styles.tileName} numberOfLines={2}>{item.name}</Text>
             {subtitle && (
               <Text style={styles.tileCommander} numberOfLines={1}>{subtitle}</Text>
@@ -127,11 +141,17 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   // ── Tile chrome ──────────────────────────────────────────────────────────
   // Outer Pressable: parchmentDeep fill in the 3px border-gap, 1px gold rim.
   // Inner View: 1px gold rim with overflow hidden, holds the commander image
-  // + dark wash + content stack. The 3px gap between the two gold rims is
-  // the "double-line gold border" idiom used elsewhere in the parchment
+  // + bottom gradient + content stack. The 3px gap between the two gold rims
+  // is the "double-line gold border" idiom used elsewhere in the parchment
   // chrome (TomePageFrame, TomeTileFrame).
+  //
+  // Aspect 16:9 + an inner Image at the card's natural ~488/680 aspect
+  // anchored top-left frames the TOP of the card (title bar +
+  // illustration) — same idiom as the prior commander-banner attempt on
+  // deck-preview, but applied here where it belongs: the deck-list tile.
   tileOuter: {
-    height: 130,
+    width: '100%',
+    aspectRatio: 16 / 9,
     marginBottom: 14,
     borderRadius: 4,
     borderWidth: 1,
@@ -146,14 +166,26 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     borderColor: colors.accent.primary,
     overflow: 'hidden',
   },
+  // Image: top-anchored, full inner width, with the card's natural aspect.
+  // Renders ~1.394× inner-width tall, with the bottom clipped by the
+  // tileInner's overflow:hidden — anchors the visible region to the TOP
+  // of the card. No resizeMode='cover' (which would re-center on the
+  // type line); the explicit aspectRatio + position:absolute is the crop.
+  tileImg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    aspectRatio: 488 / 680,
+  },
   tilePlaceholder: { backgroundColor: colors.bg.parchmentDeep },
-  // Dark wash so cream/gold text remains legible over commander art.
-  tileWash: { backgroundColor: colors.overlay.darker },
 
+  // Content overlay sits at the bottom of the tile, on top of the gradient.
   tileContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
   },
   tileName: {
     color: colors.text.primary,
