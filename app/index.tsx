@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import type { ReactElement } from 'react';
 import {
   Pressable,
   StatusBar,
@@ -19,23 +20,31 @@ import { CahMaxsGameState } from '../src/types/cah_maxs';
 import { clearMemo } from '../src/api/sleeveService';
 import TomePageFrame from '../src/components/TomePageFrame';
 import TomeTileFrame from '../src/components/TomeTileFrame';
+import {
+  AmpersandMark,
+  CardsMark,
+  PlaneswalkerMark,
+  SpadeMark,
+} from '../src/components/marks';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
+
+type MarkComponent = (props: { size?: number; gold: string; sepia: string }) => ReactElement;
 
 type GameDef = {
   id: string;
   shortLabel: string;
   title: string;
-  icon: string;
+  Mark: MarkComponent;
   available: boolean;
   route: string;
 };
 
 const GAMES: GameDef[] = [
-  { id: 'mtg',   shortLabel: 'MTG',     title: 'Magic: The Gathering',    icon: '⚔️', available: true, route: '/mtg' },
-  { id: 'poker', shortLabel: "Hold'em", title: "Texas Hold'em",           icon: '♠️', available: true, route: '/holdem/setup' },
-  { id: 'cah',   shortLabel: 'CAH',     title: 'Cards Against Humanity',  icon: '🃏', available: true, route: '/cah/setup' },
-  { id: 'dnd',   shortLabel: 'D&D',     title: 'D&D Spell Cards',         icon: '🔮', available: true, route: '/dnd' },
+  { id: 'mtg',   shortLabel: 'MTG',     title: 'Magic: The Gathering',    Mark: PlaneswalkerMark, available: true, route: '/mtg' },
+  { id: 'poker', shortLabel: "Hold'em", title: "Texas Hold'em",           Mark: SpadeMark,        available: true, route: '/holdem/setup' },
+  { id: 'cah',   shortLabel: 'CAH',     title: 'Cards Against Humanity',  Mark: CardsMark,        available: true, route: '/cah/setup' },
+  { id: 'dnd',   shortLabel: 'D&D',     title: 'D&D Spell Cards',         Mark: AmpersandMark,    available: true, route: '/dnd' },
 ];
 
 type ResumeTarget =
@@ -132,31 +141,36 @@ export default function GameSelectScreen() {
             ? `CAH Max's — ${resume.game.playerCount} players`
             : null;
 
-  const TileButton = ({ game }: { game: GameDef }) => (
-    <View style={styles.tileWrap}>
-      <Pressable
-        onPress={() => { clearMemo(); router.push(game.route as any); }}
-        style={styles.tilePressable}
-      >
-        {({ pressed }) => (
-          <TomeTileFrame pressed={pressed && game.available}>
-            <Text style={[styles.tileIcon, !game.available && styles.tileDim]}>{game.icon}</Text>
-            <Text style={[styles.tileLabel, !game.available && styles.tileDim]}>
-              {game.shortLabel}
-            </Text>
-            <View style={styles.tileFleuron}>
-              <FleuronDivider gold={colors.accent.primary} />
-            </View>
-            {!game.available && (
-              <View style={styles.comingSoonBadge}>
-                <Text style={styles.comingSoonText}>SOON</Text>
+  const TileButton = ({ game }: { game: GameDef }) => {
+    const Mark = game.Mark;
+    return (
+      <View style={styles.tileWrap}>
+        <Pressable
+          onPress={() => { clearMemo(); router.push(game.route as any); }}
+          style={styles.tilePressable}
+        >
+          {({ pressed }) => (
+            <TomeTileFrame pressed={pressed && game.available}>
+              <View style={[styles.tileIcon, !game.available && styles.tileDim]}>
+                <Mark size={60} gold={colors.accent.primary} sepia={colors.text.inkSoft} />
               </View>
-            )}
-          </TomeTileFrame>
-        )}
-      </Pressable>
-    </View>
-  );
+              <Text style={[styles.tileLabel, !game.available && styles.tileDim]}>
+                {game.shortLabel}
+              </Text>
+              <View style={styles.tileFleuron}>
+                <FleuronDivider gold={colors.accent.primary} />
+              </View>
+              {!game.available && (
+                <View style={styles.comingSoonBadge}>
+                  <Text style={styles.comingSoonText}>SOON</Text>
+                </View>
+              )}
+            </TomeTileFrame>
+          )}
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.root}>
@@ -272,9 +286,9 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   },
 
   tileIcon: {
-    fontSize: 60,
-    lineHeight: 72,
-    textAlign: 'center',
+    height: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tileLabel: {
     color: colors.text.ink,
