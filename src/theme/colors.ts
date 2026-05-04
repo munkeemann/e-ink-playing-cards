@@ -19,7 +19,21 @@ import { loadSettings, saveSettings } from '../storage/deckStorage';
 export type ThemeName = 'arcane';
 
 export type Theme = {
-  bg: { app: string; surface: string; elevated: string; parchment: string; parchmentDeep: string };
+  bg: {
+    app: string;
+    surface: string;
+    elevated: string;
+    parchment: string;
+    parchmentDeep: string;
+    /**
+     * Dark parchment / candlelit page — same paper as `parchment`, in the
+     * dark register. Use as the page fill on Class B in-game screens via
+     * TomePageFrameDark, or as the surface on dark-register components.
+     */
+    darkParchment: string;
+    /** Recess on dark parchment (e.g. inset cards, sheet bg). */
+    darkParchmentDeep: string;
+  };
   text: { primary: string; secondary: string; muted: string; disabled: string; ink: string; inkSoft: string };
   accent: { primary: string; dark: string };
   border: string;
@@ -35,7 +49,19 @@ export type Theme = {
 };
 
 const ARCANE_THEME: Theme = {
-  bg: { app: '#1A140E', surface: '#2B1F12', elevated: '#2B1F12', parchment: '#E5D4A8', parchmentDeep: '#C0A878' },
+  bg: {
+    app: '#1A140E',
+    surface: '#2B1F12',
+    elevated: '#2B1F12',
+    parchment: '#E5D4A8',
+    parchmentDeep: '#C0A878',
+    // Dark register: aged vellum in candlelight + its recess shade.
+    // Sits ~20 units brighter than bg.surface (so it's visually distinct
+    // from the leather backdrop) and firmly in the dark register, with
+    // the same warm hue family as bg.parchment — "the same paper at night."
+    darkParchment: '#3A2D1C',
+    darkParchmentDeep: '#2E2316',
+  },
   text: { primary: '#E8DCC4', secondary: '#B8A989', muted: '#7A6E5A', disabled: '#5C523F', ink: '#1A140E', inkSoft: '#3D2E1C' },
   accent: { primary: '#C9A961', dark: '#8A7340' },
   border: '#C9A961',
