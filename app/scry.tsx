@@ -14,6 +14,9 @@ import { assignSleeveIds, beginGame, getRegisteredSleeves } from '../src/api/piS
 import { getDeck, loadSettings, saveDeck } from '../src/storage/deckStorage';
 import { CardInstance, Deck } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
+import { fonts } from '../src/theme/fonts';
+import TomePageFrameDark from '../src/components/TomePageFrameDark';
+import { Button, Fleuron } from '../src/components/parchment';
 
 export default function ScryScreen() {
   const colors = useTheme();
@@ -46,9 +49,11 @@ export default function ScryScreen() {
 
   if (!deck) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent.primary} />
-      </View>
+      <TomePageFrameDark>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.accent.primary} />
+        </View>
+      </TomePageFrameDark>
     );
   }
 
@@ -140,8 +145,8 @@ export default function ScryScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
+    <TomePageFrameDark>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             Keep on Top ({topCards.length})
@@ -178,6 +183,9 @@ export default function ScryScreen() {
 
         {bottomCards.length > 0 && (
           <>
+            <View style={styles.fleuronWrap}>
+              <Fleuron width={260} register="dark" />
+            </View>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
                 Send to Bottom ({bottomCards.length})
@@ -211,88 +219,78 @@ export default function ScryScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.confirmBtn, busy && styles.confirmBtnDisabled]}
-          onPress={handleConfirm}
-          disabled={busy}
-        >
-          {busy ? (
-            <ActivityIndicator color={colors.accent.primary} />
-          ) : (
-            <Text style={styles.confirmText}>✓ Confirm & Send Sleeves</Text>
-          )}
-        </Pressable>
+        <Button onPress={handleConfirm} disabled={busy} register="dark">
+          {busy ? '…' : '✓  Confirm & Send Sleeves'}
+        </Button>
       </View>
-    </View>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingTop: 12,
-    paddingBottom: 6,
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: 1,
-    borderColor: colors.text.muted,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.disabled,
   },
   sectionTitle: {
     color: colors.accent.primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.display,
+    fontSize: 13,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 1.5,
   },
-  sectionHint: { color: colors.text.muted, fontSize: 11, marginTop: 2 },
+  sectionHint: {
+    color: colors.text.secondary,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 11,
+    marginTop: 4,
+  },
   emptyText: {
-    color: colors.text.muted,
+    color: colors.text.secondary,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 13,
     textAlign: 'center',
     paddingVertical: 20,
-    fontStyle: 'italic',
   },
+
+  fleuronWrap: { alignItems: 'center', marginVertical: 12 },
+
   cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     paddingVertical: 12,
-    backgroundColor: colors.bg.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.text.muted,
+    borderBottomColor: colors.text.disabled,
     gap: 10,
   },
   moveBtn: { paddingHorizontal: 6, paddingVertical: 4 },
-  moveBtnText: { color: colors.text.secondary, fontSize: 16 },
+  moveBtnText: { color: colors.accent.dark, fontSize: 16 },
   moveBtnDisabled: { color: colors.text.disabled },
   cardNameContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardName: { color: colors.text.primary, fontSize: 15, flex: 1 },
-  cardHint: { color: colors.text.muted, fontSize: 10 },
+  cardName: { color: colors.text.primary, fontFamily: fonts.body, fontSize: 15, flex: 1 },
+  cardHint: { color: colors.text.secondary, fontFamily: fonts.bodyItalic, fontSize: 10 },
+
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     paddingVertical: 11,
-    backgroundColor: 'transparent',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.bg.surface,
+    borderBottomColor: colors.text.disabled,
     gap: 10,
+    opacity: 0.85,
   },
   bottomNameContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  bottomName: { color: colors.text.secondary, fontSize: 14, flex: 1 },
-  bottomHint: { color: colors.text.muted, fontSize: 11 },
-  footer: {
-    padding: 14,
-    backgroundColor: colors.bg.surface,
-    borderTopWidth: 1,
-    borderColor: colors.text.muted,
-  },
-  confirmBtn: {
-    backgroundColor: colors.accent.dark,
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  confirmBtnDisabled: { opacity: 0.5 },
-  confirmText: { color: colors.accent.primary, fontSize: 16, fontWeight: '800' },
+  bottomName: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 14, flex: 1 },
+  bottomHint: { color: colors.text.secondary, fontFamily: fonts.bodyItalic, fontSize: 11 },
+
+  footer: { marginTop: 8 },
 }); }
