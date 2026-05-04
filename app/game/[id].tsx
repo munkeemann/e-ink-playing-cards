@@ -23,6 +23,8 @@ import { applyZoneTransition, TransitionResult } from '../../src/mtg/zoneTransit
 import { BUILT_IN_TOKEN_PRESETS, BuiltInTokenPreset } from '../../src/mtg/tokenPresets';
 import { ZONE_COLORS } from '../../src/mtg/zoneColors';
 import { Theme, useTheme } from '../../src/theme/colors';
+import { fonts } from '../../src/theme/fonts';
+import TomePageFrameDark from '../../src/components/TomePageFrameDark';
 import { getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
 import { AppSettings, CardInstance, Deck, TokenTemplate, TokenType } from '../../src/types';
 
@@ -1120,16 +1122,18 @@ export default function InGameScreen() {
   // ─── Render ───────────────────────────────────────────────────────────────
   if (!deck) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent.primary} />
-      </View>
+      <TomePageFrameDark>
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.accent.primary} />
+        </View>
+      </TomePageFrameDark>
     );
   }
 
   const favorites = Array.isArray(deck.tokens) ? deck.tokens : [];
 
   return (
-    <View style={styles.container}>
+    <TomePageFrameDark>
 
       {/* Deck info bar */}
       <View style={styles.header}>
@@ -1502,7 +1506,7 @@ export default function InGameScreen() {
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>Tutor</Text>
               <Text style={styles.sheetLabel}>Card name (partial match ok)</Text>
-              <TextInput style={styles.sheetInput} value={tutorQuery} onChangeText={setTutorQuery} placeholder="Lightning Bolt" placeholderTextColor={colors.text.muted} autoFocus autoCapitalize="words" />
+              <TextInput style={styles.sheetInput} value={tutorQuery} onChangeText={setTutorQuery} placeholder="Lightning Bolt" placeholderTextColor={colors.text.secondary} autoFocus autoCapitalize="words" />
               <View style={styles.sheetActions}>
                 <Pressable style={styles.cancelBtn} onPress={() => { setTutorModalVisible(false); setTutorQuery(''); }}>
                   <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -1590,7 +1594,7 @@ export default function InGameScreen() {
                   value={tokenName}
                   onChangeText={setTokenName}
                   placeholder="e.g. Soldier, Dragon, Treasure"
-                  placeholderTextColor={colors.text.muted}
+                  placeholderTextColor={colors.text.secondary}
                   autoCapitalize="words"
                 />
 
@@ -1821,76 +1825,95 @@ export default function InGameScreen() {
       </Modal>
 
 
-    </View>
+    </TomePageFrameDark>
   );
 }
 
 function makeStyles(colors: Theme) { return StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
     paddingVertical: 12,
-    backgroundColor: colors.bg.surface,
-    borderBottomWidth: 1,
-    borderColor: colors.text.muted,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.text.disabled,
   },
-  deckName: { color: colors.accent.primary, fontSize: 18, fontWeight: '800' },
+  deckName: {
+    color: colors.accent.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    letterSpacing: 0.5,
+  },
   commanderRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 },
-  commanderName: { color: colors.text.secondary, fontSize: 13 },
+  commanderName: {
+    color: colors.text.primary,
+    fontFamily: fonts.bodyItalic,
+    fontSize: 13,
+  },
   cmdZoneBadge: {
     color: colors.status.warning,
+    fontFamily: fonts.display,
     fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: colors.status.warning,
   },
-  castTaxText: { color: colors.text.muted, fontSize: 11, fontWeight: '600' },
+  castTaxText: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 11,
+  },
   headerMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   headerMetaRight: { alignItems: 'flex-end', gap: 4 },
-  sleeveStatus: { color: colors.status.success, fontSize: 11 },
+  sleeveStatus: { color: colors.status.success, fontFamily: fonts.body, fontSize: 11 },
   sleeveStatusNone: { color: colors.status.danger },
-  settingsIndicator: { color: colors.text.muted, fontSize: 11 },
-  endGameBtn: { color: colors.status.danger, fontSize: 11, fontWeight: '700' },
+  settingsIndicator: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 11 },
+  endGameBtn: { color: colors.status.danger, fontFamily: fonts.display, fontSize: 11 },
 
-  zoneGrid: { paddingHorizontal: 10, paddingTop: 12, paddingBottom: 4, gap: 8 },
+  zoneGrid: { paddingHorizontal: 0, paddingTop: 12, paddingBottom: 4, gap: 8 },
   zoneGridRow: { flexDirection: 'row', gap: 8 },
+  // Zone button per-zone tint (background) comes from src/mtg/zoneColors.ts
+  // — game data, intentionally untouched by the dark-parchment migration.
+  // Only the inset fill (overlay.light) changes for the new ground.
   zoneBtn: {
     flex: 1,
     height: 75,
     borderWidth: 1.5,
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.overlay.light,
+    backgroundColor: colors.bg.darkParchmentDeep,
   },
-  zoneBtnLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  zoneBtnCount: { fontSize: 22, fontWeight: '800', marginTop: 4 },
-  zoneBtnCommander: { fontSize: 8, fontWeight: '700', marginTop: 4, textAlign: 'center', paddingHorizontal: 2 },
-  zoneBtnCast: { fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
+  zoneBtnLabel: { fontFamily: fonts.display, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 },
+  zoneBtnCount: { fontFamily: fonts.displayBold, fontSize: 22, marginTop: 4 },
+  zoneBtnCommander: { fontFamily: fonts.display, fontSize: 8, marginTop: 4, textAlign: 'center', paddingHorizontal: 2 },
+  zoneBtnCast: { fontFamily: fonts.displayBold, fontSize: 16, letterSpacing: 0.3 },
   zoneBtnCastRow: { marginTop: 2, paddingVertical: 2, paddingHorizontal: 6 },
 
-  actionGrid: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 14, gap: 8 },
+  actionGrid: { paddingHorizontal: 0, paddingTop: 10, paddingBottom: 14, gap: 8 },
   actionRow: { flexDirection: 'row', gap: 8 },
   actionBtn: {
     flex: 1,
-    backgroundColor: colors.bg.surface,
-    borderRadius: 8,
+    backgroundColor: colors.bg.darkParchmentDeep,
+    borderRadius: 4,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.text.muted,
+    borderColor: colors.accent.dark,
     gap: 4,
   },
   actionBtnSpacer: { flex: 1 },
   actionIcon: { fontSize: 20 },
-  actionLabel: { color: colors.accent.primary, fontSize: 11, fontWeight: '700' },
+  actionLabel: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
   btnDisabled: { opacity: 0.4 },
 
   busyOverlay: {
@@ -1905,17 +1928,19 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     padding: 8,
     backgroundColor: colors.overlay.darker,
   },
-  busyText: { color: colors.text.secondary, fontSize: 13 },
+  busyText: { color: colors.text.primary, fontFamily: fonts.body, fontSize: 13 },
 
+  // Bottom sheets — slide up looking like a dark-parchment page over the
+  // game. dark-register fill + accent.dark border + Cinzel display titles.
   sheetBackdrop: { flex: 1, backgroundColor: colors.overlay.dark, justifyContent: 'flex-end' },
   sheetBackdropTouchable: { ...StyleSheet.absoluteFillObject },
   sheet: {
-    backgroundColor: colors.bg.surface,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
+    backgroundColor: colors.bg.darkParchment,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: colors.text.muted,
+    borderColor: colors.accent.dark,
     paddingHorizontal: 20,
     paddingBottom: 36,
     maxHeight: '80%',
@@ -1926,38 +1951,64 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.text.muted,
+    backgroundColor: colors.text.disabled,
     alignSelf: 'center',
     marginVertical: 10,
   },
-  sheetTitle: { color: colors.accent.primary, fontSize: 18, fontWeight: '800', marginBottom: 14 },
-  sheetLabel: { color: colors.text.secondary, fontSize: 13, marginBottom: 6, marginTop: 10 },
+  sheetTitle: {
+    color: colors.accent.primary,
+    fontFamily: fonts.displayBold,
+    fontSize: 18,
+    letterSpacing: 0.5,
+    marginBottom: 14,
+  },
+  sheetLabel: {
+    color: colors.text.secondary,
+    fontFamily: fonts.body,
+    fontSize: 13,
+    marginBottom: 6,
+    marginTop: 10,
+  },
   sheetInput: {
     backgroundColor: 'transparent',
     color: colors.text.primary,
+    fontFamily: fonts.body,
     borderWidth: 1,
-    borderColor: colors.text.muted,
-    borderRadius: 8,
+    borderColor: colors.accent.dark,
+    borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
     marginBottom: 4,
   },
   sheetActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: colors.text.muted },
-  cancelBtnText: { color: colors.text.muted, fontSize: 15 },
-  confirmBtn: { flex: 1, backgroundColor: colors.accent.dark, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  confirmBtnText: { color: colors.accent.primary, fontSize: 15, fontWeight: '800' },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 4, alignItems: 'center', borderWidth: 1, borderColor: colors.text.disabled },
+  cancelBtnText: { color: colors.text.secondary, fontFamily: fonts.display, fontSize: 15 },
+  confirmBtn: { flex: 1, backgroundColor: colors.accent.dark, paddingVertical: 12, borderRadius: 4, alignItems: 'center' },
+  confirmBtnText: { color: colors.accent.primary, fontFamily: fonts.displayBold, fontSize: 15 },
 
-  mulliganInfo: { color: colors.text.secondary, fontSize: 15, lineHeight: 22, marginBottom: 12 },
+  mulliganInfo: {
+    color: colors.text.primary,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
   mulliganBottomedBox: {
     backgroundColor: colors.overlay.dark,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
-  mulliganBottomedLabel: { color: colors.text.muted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 },
-  mulliganBottomedCard: { color: colors.text.primary, fontSize: 14, paddingVertical: 2 },
+  mulliganBottomedLabel: {
+    color: colors.accent.primary,
+    fontFamily: fonts.display,
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  mulliganBottomedCard: { color: colors.text.primary, fontFamily: fonts.body, fontSize: 14, paddingVertical: 2 },
   mulliganBusyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
 
   zoneSheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
@@ -1967,7 +2018,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
   },
   zoneClsBtnText: { color: colors.text.secondary, fontSize: 12, fontWeight: '700' },
   moveSelectedBtn: {
@@ -1979,14 +2030,14 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   moveSelectedBtnDisabled: { opacity: 0.35 },
   moveSelectedBtnText: { color: colors.accent.primary, fontSize: 12, fontWeight: '700' },
 
-  emptyText: { color: colors.text.muted, fontSize: 14, textAlign: 'center', marginTop: 24, marginBottom: 12 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.text.muted },
+  emptyText: { color: colors.text.secondary, fontFamily: fonts.bodyItalic, fontSize: 14, textAlign: 'center', marginTop: 24, marginBottom: 12 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.text.disabled },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1994,18 +2045,18 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   checkboxChecked: { backgroundColor: colors.accent.dark, borderColor: colors.accent.primary },
   checkmark: { color: colors.accent.primary, fontSize: 13, fontWeight: '800' },
   cardNameWrapper: { flex: 1 },
-  cardName: { color: colors.text.primary, fontSize: 15 },
-  tokenBadge: { color: colors.status.warning, fontSize: 11, fontWeight: '700', marginLeft: 6 },
+  cardName: { color: colors.text.primary, fontFamily: fonts.body, fontSize: 15 },
+  tokenBadge: { color: colors.status.warning, fontFamily: fonts.display, fontSize: 11, marginLeft: 6 },
 
-  tabRow: { flexDirection: 'row', marginBottom: 16, borderRadius: 8, backgroundColor: 'transparent', padding: 3 },
-  tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
+  tabRow: { flexDirection: 'row', marginBottom: 16, borderRadius: 4, backgroundColor: 'transparent', padding: 3 },
+  tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 4 },
   tabActive: { backgroundColor: colors.accent.dark },
-  tabText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
+  tabText: { color: colors.text.secondary, fontFamily: fonts.display, fontSize: 14 },
   tabTextActive: { color: colors.accent.primary },
 
   ptRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ptField: { flex: 1 },
-  ptSlash: { color: colors.text.muted, fontSize: 24, fontWeight: '700', marginTop: 18 },
+  ptSlash: { color: colors.text.secondary, fontSize: 24, fontWeight: '700', marginTop: 18 },
 
   colorRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   colorBtn: {
@@ -2014,13 +2065,13 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     backgroundColor: colors.overlay.light,
     gap: 4,
   },
   colorBtnActive: { borderColor: colors.accent.primary, backgroundColor: colors.overlay.light },
   colorBtnText: { fontSize: 18 },
-  colorBtnLabel: { color: colors.text.muted, fontSize: 11, fontWeight: '800' },
+  colorBtnLabel: { color: colors.text.secondary, fontSize: 11, fontWeight: '800' },
   colorBtnLabelActive: { color: colors.accent.primary },
 
   favoriteRow: {
@@ -2028,11 +2079,11 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
   },
   favoriteInfo: { flex: 1 },
   favoriteName: { color: colors.accent.primary, fontSize: 16, fontWeight: '700' },
-  favoriteMeta: { color: colors.text.muted, fontSize: 12, marginTop: 2 },
+  favoriteMeta: { color: colors.text.secondary, fontSize: 12, marginTop: 2 },
   favoriteMetaHint: { color: colors.accent.dark, fontSize: 12, marginTop: 2, fontStyle: 'italic' },
   favoriteCreate: { color: colors.accent.dark, fontSize: 14, fontWeight: '700', paddingLeft: 12 },
 
@@ -2042,7 +2093,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     backgroundColor: colors.overlay.light,
   },
   presetChipText: { color: colors.accent.primary, fontSize: 13, fontWeight: '600' },
@@ -2053,17 +2104,17 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     alignItems: 'center',
   },
   segBtnActive: { borderColor: colors.accent.primary, backgroundColor: colors.overlay.light },
-  segBtnText: { color: colors.text.muted, fontSize: 14, fontWeight: '700' },
+  segBtnText: { color: colors.text.secondary, fontSize: 14, fontWeight: '700' },
   segBtnTextActive: { color: colors.accent.primary },
 
   placeCardName: {
     color: colors.accent.primary,
+    fontFamily: fonts.displayBold,
     fontSize: 16,
-    fontWeight: '700',
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -2073,10 +2124,10 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     gap: 8,
   },
-  flipZoneBadge: { color: colors.text.muted, fontSize: 11, fontWeight: '700' },
+  flipZoneBadge: { color: colors.text.secondary, fontSize: 11, fontWeight: '700' },
   flipFaceBadge: { color: colors.status.success, fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' },
   flipFaceBadgeBack: { color: colors.status.warning },
 
@@ -2087,16 +2138,16 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     justifyContent: 'center',
   },
   sleeveWaitCard: {
-    backgroundColor: colors.bg.surface,
+    backgroundColor: colors.bg.darkParchmentDeep,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.text.muted,
+    borderColor: colors.text.disabled,
     padding: 28,
     width: 280,
     alignItems: 'center',
   },
-  sleeveWaitTitle: { color: colors.accent.primary, fontSize: 16, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  sleeveWaitCountdown: { color: colors.text.muted, fontSize: 36, fontWeight: '800', marginBottom: 20 },
+  sleeveWaitTitle: { color: colors.accent.primary, fontFamily: fonts.display, fontSize: 16, letterSpacing: 0.5, textAlign: 'center', marginBottom: 8 },
+  sleeveWaitCountdown: { color: colors.accent.primary, fontFamily: fonts.displayBold, fontSize: 36, marginBottom: 20 },
 
   artBackdrop: { flex: 1, backgroundColor: colors.overlay.darker, alignItems: 'center', justifyContent: 'center' },
   artFull: { width: '90%', height: '80%' },
