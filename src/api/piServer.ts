@@ -4,6 +4,16 @@ import { timedFetch } from './http';
 
 export { PI_SERVER };
 
+// Network timeouts (ms). Pi-side endpoints get short timeouts because the
+// Pi is on local Wi-Fi; image fetches go to Scryfall over the wider net.
+const PI_FETCH_TIMEOUT_MS = 5000;
+const PI_POST_TIMEOUT_MS = 3000;
+const SCRYFALL_IMAGE_TIMEOUT_MS = 5000;
+const SLEEVE_SELECT_POLL_TIMEOUT_MS = 30_000;
+// Concurrency cap on parallel beginGame per-sleeve POSTs. Keeps the Pi
+// HTTP server from being swamped while still saturating the link.
+const PI_CONCURRENCY = 8;
+
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 /**
@@ -30,7 +40,7 @@ function makeSemaphore(max: number) {
 export async function getRegisteredSleeves(serverUrl: string = PI_SERVER): Promise<number[]> {
   const url = `${serverUrl}/sleeves`;
   try {
-    const resp = await timedFetch(url, {}, 5000);
+    const resp = await timedFetch(url, {}, PI_FETCH_TIMEOUT_MS);
     if (!resp.ok) return [];
     const raw = await resp.text();
     const data = JSON.parse(raw) as unknown;
@@ -55,7 +65,7 @@ export async function getRegisteredSleeves(serverUrl: string = PI_SERVER): Promi
  */
 export async function clearSleeve(sid: number, serverUrl: string = PI_SERVER): Promise<void> {
   try {
-    await timedFetch(`${serverUrl}/clear?sleeve_id=${sid}`, { method: 'POST' }, 3000);
+    await timedFetch(`${serverUrl}/clear?sleeve_id=${sid}`, { method: 'POST' }, PI_POST_TIMEOUT_MS);
   } catch {
     // Pi may be offline — fail silently
   }
@@ -95,7 +105,7 @@ export async function pushZoneUpdateViaPi(
     await timedFetch(
       `${serverUrl}/set_zone?sleeve_id=${sleeveId}&zone=${zoneIndex}`,
       { method: 'POST' },
-      3000,
+      PI_POST_TIMEOUT_MS,
     );
   } catch {
     // Pi offline — fail silently
@@ -192,7 +202,7 @@ export async function pushCardToSleeve(
     return;
   }
   try {
-    const imageResp = await timedFetch(card.imagePath, {}, 5000);
+    const imageResp = await timedFetch(card.imagePath, {}, SCRYFALL_IMAGE_TIMEOUT_MS);
     if (!imageResp.ok) return;
     const buf = await imageResp.arrayBuffer();
     await sendToSleeve(card.sleeveId, mtgDescriptor(card.sleeveId, card.zone, commanderSleeveCount), buf, serverUrl);
@@ -212,7 +222,7 @@ export interface SleeveZoneState {
  * Returns an empty object if the Pi is unreachable or the response is malformed.
  */
 export async function fetchZones(serverUrl: string = PI_SERVER): Promise<Record<number, SleeveZoneState>> {
-  const resp = await timedFetch(`${serverUrl}/zones`, {}, 3000);
+  const resp = await timedFetch(`${serverUrl}/zones`, {}, PI_POST_TIMEOUT_MS);
   if (!resp.ok) return {};
   const raw = await resp.json() as unknown;
   if (raw && typeof raw === 'object' && 'zones' in raw) {
@@ -240,7 +250,7 @@ export async function fetchZones(serverUrl: string = PI_SERVER): Promise<Record<
  */
 export async function waitForSleeveSelection(
   isCancelled: () => boolean,
-  timeoutMs: number = 30000,
+  timeoutMs: number = SLEEVE_SELECT_POLL_TIMEOUT_MS,
   serverUrl: string = PI_SERVER,
 ): Promise<number | null> {
   // Snapshot current zone state
@@ -315,7 +325,7 @@ export async function beginGame(
     const total = eligible.length;
 
     const t0 = Date.now();
-    const sem = makeSemaphore(8);
+    const sem = makeSemaphore(PI_CONCURRENCY);
     let sent = 0;
 
     const tasks = eligible.map(card => (async () => {
