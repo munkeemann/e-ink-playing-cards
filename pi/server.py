@@ -17,6 +17,8 @@ SLEEVE_DISPLAY_PATH = "/display"
 SLEEVE_TIMEOUT = 5  # seconds
 REGISTRY_PATH = "/home/maxja/eink_receiver/registry.json"
 PING_INTERVAL = 30  # seconds
+MAX_REQUEST_BYTES = 8 * 1024 * 1024  # 8 MB; larger than any sleeve JPEG
+DIAG_LOG_CAP = 2048  # bytes; truncate /diag bodies before logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +44,7 @@ class _PollingAccessLogFilter(logging.Filter):
 logging.getLogger("werkzeug").addFilter(_PollingAccessLogFilter())
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = MAX_REQUEST_BYTES
 
 # sleeve_id -> ip
 registry: dict[str, str] = {}
@@ -147,7 +150,10 @@ def convert_to_baseline(jpeg_bytes: bytes) -> bytes:
         identify = subprocess.run([
             "identify", "-format", "%[jpeg:sampling-factor] %[colorspace]", fout_path
         ], capture_output=True)
-        logging.info(f"JPEG properties: {identify.stdout.decode().strip()}")
+        if identify.returncode != 0:
+            logging.warning(f"identify failed (rc={identify.returncode}): {identify.stderr.decode().strip()}")
+        else:
+            logging.info(f"JPEG properties: {identify.stdout.decode().strip()}")
 
         with open(fout_path, "rb") as f:
             return f.read()
@@ -160,6 +166,8 @@ def convert_to_baseline(jpeg_bytes: bytes) -> bytes:
 @app.post("/diag")
 def diag():
     body = request.get_data(as_text=True)
+    if len(body) > DIAG_LOG_CAP:
+        body = body[:DIAG_LOG_CAP] + f"... [truncated, total {len(body)} bytes]"
     logging.info(f"[DIAG] {body}")
     return jsonify(ok=True), 200
 
@@ -227,7 +235,7 @@ def display():
         # Legacy fallback: synthesize descriptor from query params + raw JPEG body
         card_label = request.args.get("card_label") or None
         zone = request.args.get("zone") or None
-        face_down = request.args.get("face_down", "0") not in ("0", "", "false", "False")
+        face_down = request.args.get("face_down", "").lower() in ("1", "true", "yes")
 
         jpeg_bytes = request.get_data()
 
@@ -348,6 +356,14 @@ def set_zone():
     if not sleeve_id or zone is None:
         return jsonify(error="sleeve_id and zone required"), 400
 
+    # Validate `zone` to an int up front. Previously the Pi POSTed the raw
+    # string to the firmware first, then int(zone) raised a 500 — leaving
+    # zone_states out of sync with whatever the sleeve received.
+    try:
+        zone_index = int(zone)
+    except ValueError:
+        return jsonify(error=f"zone must be an integer, got {zone!r}"), 400
+
     with registry_lock:
         ip = registry.get(sleeve_id)
     if ip is None:
@@ -356,11 +372,10 @@ def set_zone():
     try:
         resp = requests.post(
             f"http://{ip}/zone",
-            params={"zone": zone},
+            params={"zone": zone_index},
             timeout=SLEEVE_TIMEOUT
         )
         resp.raise_for_status()
-        zone_index = int(zone)
         cell = ZONE_INDEX_TO_CELL.get(zone_index, "EXL")
         with zone_lock:
             zone_states[sleeve_id] = {"active_idx": zone_index, "cell": cell}
@@ -417,9 +432,13 @@ def configure_network():
             logging.warning(f"ip addr add failed: {msg}")
 
 
+# Run on import so registry + ping thread also come up under wsgi / gunicorn.
+# `configure_network` and `app.run` stay in __main__ since they are CLI concerns.
+_load_registry()
+threading.Thread(target=_ping_loop, daemon=True).start()
+
+
 if __name__ == "__main__":
-    _load_registry()
-    threading.Thread(target=_ping_loop, daemon=True).start()
     configure_network()
     logging.info(f"Begin Game Server listening on {HOST}:{PORT}")
     app.run(host=HOST, port=PORT, threaded=True)
