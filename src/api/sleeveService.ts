@@ -1,17 +1,8 @@
 import { Image } from 'react-native';
 import { PI_SERVER } from '../config';
+import { timedFetch } from './http';
 
 export { PI_SERVER };
-
-async function timedFetch(uri: string, timeoutMs = 5000): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(uri, { signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 // ── Card-back asset ──────────────────────────────────────────────────────────
 
@@ -33,7 +24,7 @@ async function getCardBackBytes(): Promise<ArrayBuffer> {
   console.log('[SLV] prefetch warmup', src.uri);
   try { await Image.prefetch(src.uri); } catch { /* best-effort */ }
   console.log('[SLV] getCardBackBytes fetch start');
-  const resp = await timedFetch(src.uri, 5000);
+  const resp = await timedFetch(src.uri, {}, 5000);
   console.log('[SLV] getCardBackBytes fetch done in', Date.now() - t0, 'ms — status:', resp.status);
   if (!resp.ok) {
     console.log('[SLV] getCardBackBytes exit — HTTP error', resp.status);
@@ -178,7 +169,7 @@ export async function prefetchCardBacks(): Promise<void> {
     console.log('[SLV] prefetch warmup', src.uri);
     try { await Image.prefetch(src.uri); } catch { /* best-effort */ }
     console.log('[SLV] prefetchCardBacks fetch start —', src.uri);
-    const resp = await timedFetch(src.uri, 5000);
+    const resp = await timedFetch(src.uri, {}, 5000);
     console.log('[SLV] prefetchCardBacks fetch done in', Date.now() - t0, 'ms — status:', resp.status);
     if (!resp.ok) { console.warn(`[SLV] prefetchCardBacks: HTTP ${resp.status}`); return; }
     const bytes = await resp.arrayBuffer();

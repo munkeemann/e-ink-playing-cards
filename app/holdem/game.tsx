@@ -24,6 +24,7 @@ import {
 import { loadHoldemGame, saveHoldemGame, clearHoldemGame } from '../../src/storage/holdemStorage';
 import { sendToSleeve, clearMemo } from '../../src/api/sleeveService';
 import { getRegisteredSleeves } from '../../src/api/piServer';
+import { timedFetch } from '../../src/api/http';
 import { HoldemGameState, PlayingCard, Suit } from '../../src/types/holdem';
 import { SKIN_ASSETS, skinCardKey } from '../../src/assets/skins/registry';
 import { Theme, useTheme } from '../../src/theme/colors';
@@ -88,16 +89,6 @@ const CARD_ASSETS: Record<string, number> = {
 };
 
 const _skinCache: Map<string, ArrayBuffer> = new Map();
-
-async function timedFetch(uri: string, timeoutMs = 5000): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(uri, { signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 async function getCardBytes(
   rank: string,
@@ -173,7 +164,7 @@ export async function prefetchSkin(skinName: string): Promise<void> {
         if (!src?.uri) { console.warn(`[Prefetch] CARD_ASSETS ${key}: no URI`); continue; }
         console.log('[SLV] prefetch warmup', src.uri);
         try { await Image.prefetch(src.uri); } catch { /* best-effort */ }
-        const resp = await timedFetch(src.uri, 5000);
+        const resp = await timedFetch(src.uri, {}, 5000);
         if (!resp.ok) { console.warn(`[Prefetch] CARD_ASSETS ${key}: HTTP ${resp.status}`); continue; }
         _skinCache.set(cacheKey, await resp.arrayBuffer());
         cached++;
@@ -192,7 +183,7 @@ export async function prefetchSkin(skinName: string): Promise<void> {
         if (!src?.uri) { console.warn(`[Prefetch] skin ${skinName}/${fileKey}: no URI`); continue; }
         console.log('[SLV] prefetch warmup', src.uri);
         try { await Image.prefetch(src.uri); } catch { /* best-effort */ }
-        const resp = await timedFetch(src.uri, 5000);
+        const resp = await timedFetch(src.uri, {}, 5000);
         if (!resp.ok) { console.warn(`[Prefetch] skin ${skinName}/${fileKey}: HTTP ${resp.status}`); continue; }
         _skinCache.set(cacheKey, await resp.arrayBuffer());
         cached++;

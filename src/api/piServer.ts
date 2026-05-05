@@ -1,5 +1,6 @@
 import { AppSettings, CardInstance } from '../types';
 import { PI_SERVER, mtgDescriptor, sendToSleeve } from './sleeveService';
+import { timedFetch } from './http';
 
 export { PI_SERVER };
 
@@ -29,9 +30,7 @@ function makeSemaphore(max: number) {
 export async function getRegisteredSleeves(serverUrl: string = PI_SERVER): Promise<number[]> {
   const url = `${serverUrl}/sleeves`;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const resp = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+    const resp = await timedFetch(url, {}, 5000);
     if (!resp.ok) return [];
     const raw = await resp.text();
     const data = JSON.parse(raw) as unknown;
@@ -56,12 +55,7 @@ export async function getRegisteredSleeves(serverUrl: string = PI_SERVER): Promi
  */
 export async function clearSleeve(sid: number, serverUrl: string = PI_SERVER): Promise<void> {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    await fetch(`${serverUrl}/clear?sleeve_id=${sid}`, {
-      method: 'POST',
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
+    await timedFetch(`${serverUrl}/clear?sleeve_id=${sid}`, { method: 'POST' }, 3000);
   } catch {
     // Pi may be offline — fail silently
   }
@@ -82,9 +76,7 @@ const ZONE_INDEX: Record<string, number> = {
  */
 export async function getSleeveIpMap(serverUrl: string = PI_SERVER): Promise<Record<number, string>> {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const resp = await fetch(`${serverUrl}/sleeves`, { signal: controller.signal }).finally(() => clearTimeout(timer));
+    const resp = await timedFetch(`${serverUrl}/sleeves`, {}, 5000);
     if (!resp.ok) return {};
     const data = JSON.parse(await resp.text()) as unknown;
     if (data && typeof data === 'object' && 'sleeves' in data) {
@@ -118,14 +110,11 @@ export async function pushZoneUpdate(
   if (!ip) return;
   const zoneIndex = ZONE_INDEX[zone] ?? 0;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    await fetch(`http://${ip}/zone`, {
+    await timedFetch(`http://${ip}/zone`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ zone: zoneIndex }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
+    }, 3000);
   } catch {
     // Sleeve offline — fail silently
   }
@@ -156,12 +145,11 @@ export async function pushZoneUpdateViaPi(
   if (!registered.has(sleeveId)) return;
   const zoneIndex = ZONE_INDEX[zone] ?? 0;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3000);
-    await fetch(`${serverUrl}/set_zone?sleeve_id=${sleeveId}&zone=${zoneIndex}`, {
-      method: 'POST',
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timer));
+    await timedFetch(
+      `${serverUrl}/set_zone?sleeve_id=${sleeveId}&zone=${zoneIndex}`,
+      { method: 'POST' },
+      3000,
+    );
   } catch {
     // Pi offline — fail silently
   }
@@ -277,9 +265,7 @@ export interface SleeveZoneState {
  * Returns an empty object if the Pi is unreachable or the response is malformed.
  */
 export async function fetchZones(serverUrl: string = PI_SERVER): Promise<Record<number, SleeveZoneState>> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
-  const resp = await fetch(`${serverUrl}/zones`, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  const resp = await timedFetch(`${serverUrl}/zones`, {}, 3000);
   if (!resp.ok) return {};
   const raw = await resp.json() as unknown;
   if (raw && typeof raw === 'object' && 'zones' in raw) {
