@@ -19,11 +19,12 @@
  * Children render on top of the parchment in a content View padded
  * inside the inner gold border.
  */
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { useTheme } from '../theme/colors';
 
@@ -75,6 +76,13 @@ interface Props {
 export default function TomePageFrame({ children }: Props) {
   const colors = useTheme();
   const insets = useSafeAreaInsets();
+  // SAM1-94: when a native header is rendered above us (Stack screen with
+  // headerShown !== false), the header has already consumed the top safe
+  // area — adding insets.top again creates a status-bar-tall dead band.
+  // headerHeight is 0 when the header is hidden (e.g. app/index), so we
+  // fall back to the original insets.top + leather pad in that case.
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
+  const topInset = headerHeight > 0 ? 0 : insets.top;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -90,7 +98,7 @@ export default function TomePageFrame({ children }: Props) {
         styles.outer,
         {
           paddingHorizontal: PAGE_HORIZONTAL_INSET,
-          paddingTop: insets.top + PAGE_TOP_LEATHER_PAD,
+          paddingTop: topInset + PAGE_TOP_LEATHER_PAD,
           paddingBottom: insets.bottom + PAGE_BOTTOM_LEATHER_PAD,
         },
       ]}

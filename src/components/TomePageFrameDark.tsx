@@ -20,11 +20,12 @@
  * TomePageFrame. If TomePageFrame's geometry changes, this file should
  * be updated in lockstep — they are sister components.
  */
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import Svg, { Rect } from 'react-native-svg';
 import { useTheme } from '../theme/colors';
 import {
@@ -45,6 +46,9 @@ interface Props {
 export default function TomePageFrameDark({ children }: Props) {
   const colors = useTheme();
   const insets = useSafeAreaInsets();
+  // SAM1-94: see TomePageFrame for rationale — sister components stay in lockstep.
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
+  const topInset = headerHeight > 0 ? 0 : insets.top;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -60,7 +64,7 @@ export default function TomePageFrameDark({ children }: Props) {
         styles.outer,
         {
           paddingHorizontal: PAGE_HORIZONTAL_INSET,
-          paddingTop: insets.top + PAGE_TOP_LEATHER_PAD,
+          paddingTop: topInset + PAGE_TOP_LEATHER_PAD,
           paddingBottom: insets.bottom + PAGE_BOTTOM_LEATHER_PAD,
         },
       ]}
