@@ -26,26 +26,62 @@ interface DeckEntry {
   isCommander?: boolean;
 }
 
+type ParsedLine = {
+  count: number;
+  name: string;
+  set: string | null;
+  collectorNumber: string | null;
+};
+
+const LINE_WITH_PRINTING = /^\s*(\d+)\s+(.+?)\s+\(([A-Za-z0-9]{2,7})\)\s+(\S+?)(?:\s+\*[A-Z]\*)*\s*$/;
+const LINE_NAME_ONLY = /^\s*(\d+)\s+(.+?)(?:\s+\*[A-Z]\*)*\s*$/;
+const HEADER_LINES = new Set(['sideboard:', 'deck', 'commander', 'companion', 'maybeboard:']);
+
+function parseLine(line: string): ParsedLine | null {
+  const printing = line.match(LINE_WITH_PRINTING);
+  if (printing) {
+    const [, count, name, set, collectorNumber] = printing;
+    return {
+      count: parseInt(count, 10),
+      name: name.trim(),
+      set: set.toLowerCase(),
+      collectorNumber,
+    };
+  }
+  const nameOnly = line.match(LINE_NAME_ONLY);
+  if (nameOnly) {
+    const [, count, name] = nameOnly;
+    return {
+      count: parseInt(count, 10),
+      name: name.trim(),
+      set: null,
+      collectorNumber: null,
+    };
+  }
+  return null;
+}
+
 function parseDeckList(text: string): DeckEntry[] {
   return text
     .split(/\r\n|\r|\n/)
     .map(l => l.trim())
     .filter(Boolean)
+    .filter(l => !l.startsWith('#') && !l.startsWith('//'))
+    .filter(l => !HEADER_LINES.has(l.toLowerCase()))
     .flatMap(line => {
       // SAM1-69: strip a trailing "*CMDR*" marker (Tappedout convention) before regex.
+      // The regex tail only handles single-letter finish markers, not multi-letter tags.
       let isCommander = false;
       const cmdrMatch = line.match(/^(.*?)\s*\*CMDR\*\s*$/i);
       if (cmdrMatch) {
         isCommander = true;
         line = cmdrMatch[1].trim();
       }
-      // Matches "4 Card Name" or "4 Card Name (SET) 123"
-      const m = line.match(/^(\d+)\s+(.+?)(?:\s+\(([A-Za-z0-9]{2,6})\)(?:\s+(\S+))?)?$/);
-      if (!m) return [];
-      const [, countStr, name, setCode, collectorNumber] = m;
-      const entry: DeckEntry = { count: parseInt(countStr, 10), name: name.trim() };
-      if (setCode) entry.setCode = setCode.toUpperCase();
-      if (collectorNumber) entry.collectorNumber = collectorNumber;
+      const parsed = parseLine(line);
+      if (!parsed) return [];
+      const entry: DeckEntry = { count: parsed.count, name: parsed.name };
+      if (parsed.set) entry.setCode = parsed.set;
+      if (parsed.collectorNumber) entry.collectorNumber = parsed.collectorNumber;
       if (isCommander) entry.isCommander = true;
       return [entry];
     });
