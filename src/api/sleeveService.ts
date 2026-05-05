@@ -1,6 +1,7 @@
 import { Image } from 'react-native';
+import { PI_SERVER } from '../config';
 
-export const PI_SERVER = 'http://192.168.86.193:5050';
+export { PI_SERVER };
 
 async function timedFetch(uri: string, timeoutMs = 5000): Promise<Response> {
   const controller = new AbortController();
