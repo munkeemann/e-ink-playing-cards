@@ -1,32 +1,7 @@
-import { Alert } from 'react-native';
 import { AppSettings, CardInstance } from '../types';
 import { PI_SERVER, mtgDescriptor, sendToSleeve } from './sleeveService';
 
 export { PI_SERVER };
-
-/** Set to true via configurePiDebug() to show blocking step-by-step alerts. */
-let _piDebugAlerts = false;
-
-/** Called from app startup (and settings save) to sync the debug-alert flag. */
-export function configurePiDebug(enabled: boolean): void {
-  _piDebugAlerts = enabled;
-}
-
-/**
- * Blocking alert — must be dismissed before the caller continues.
- * No-ops (console.log only) when piDebugAlerts is disabled.
- */
-const alertWait = (title: string, message: string): Promise<void> => {
-  if (!_piDebugAlerts) {
-    console.log(`[Pi][debug] ${title}: ${message}`);
-    return Promise.resolve();
-  }
-  return new Promise<void>(resolve =>
-    Alert.alert(title, message, [{ text: 'OK', onPress: resolve }]),
-  );
-};
-
-const INTER_CARD_DELAY_MS = 500;
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -53,31 +28,25 @@ function makeSemaphore(max: number) {
  */
 export async function getRegisteredSleeves(serverUrl: string = PI_SERVER): Promise<number[]> {
   const url = `${serverUrl}/sleeves`;
-  await alertWait('getRegisteredSleeves', `Fetching: ${url}`);
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 5000);
     const resp = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-    await alertWait('getRegisteredSleeves: HTTP', `Status: ${resp.status} ${resp.statusText}`);
     if (!resp.ok) return [];
     const raw = await resp.text();
-    await alertWait('getRegisteredSleeves: raw body', raw);
     const data = JSON.parse(raw) as unknown;
     if (Array.isArray(data)) return data as number[];
     // Pi returns {"sleeves": {"4": "192.168.4.19", ...}}
     if (data && typeof data === 'object' && 'sleeves' in data) {
       const sleevesMap = (data as { sleeves: Record<string, unknown> }).sleeves;
       if (sleevesMap && typeof sleevesMap === 'object') {
-        const ids = Object.keys(sleevesMap).map(Number).filter(n => !isNaN(n));
-        await alertWait('getRegisteredSleeves: parsed', `Sleeve IDs: [${ids.join(', ')}]`);
-        return ids;
+        return Object.keys(sleevesMap).map(Number).filter(n => !isNaN(n));
       }
     }
-    await alertWait('getRegisteredSleeves: WARN', `Unrecognised format: ${JSON.stringify(data)}`);
+    console.warn(`[Pi] getRegisteredSleeves: unrecognised format: ${JSON.stringify(data)}`);
     return [];
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    await alertWait('getRegisteredSleeves: ERROR', msg);
+    console.warn('[Pi] getRegisteredSleeves error:', e instanceof Error ? e.message : e);
     return [];
   }
 }
@@ -163,10 +132,6 @@ export async function pushZoneUpdate(
 }
 
 // Short-lived cache so rapid zone-update calls don't each fire a separate /sleeves fetch.
-// NOTE: getCachedRegistered piggybacks on getRegisteredSleeves, which uses alertWait
-// internally. In debug-alert mode this will pop a blocking alert on the first zone update
-// after the cache expires (every 15 s). Before any public demo, either disable debug-alert
-// mode in settings or add a silent fast-path variant of getRegisteredSleeves here.
 let _regCache: { ids: Set<number>; expires: number } | null = null;
 
 async function getCachedRegistered(serverUrl: string): Promise<Set<number>> {
@@ -385,20 +350,11 @@ export async function beginGame(
   settings?: AppSettings,
 ): Promise<void> {
   try {
-    await alertWait('beginGame: START', `cards=${cards?.length ?? 'null'}, registeredSleeves=[${registeredSleeves?.join(', ')}], url=${serverUrl}`);
-
     const safeCards = Array.isArray(cards) ? cards : [];
     const safeRegistered = Array.isArray(registeredSleeves) ? registeredSleeves : [];
     const registeredSet = new Set(safeRegistered);
     const physZones = settings ? new Set(settings.physicalZones) : null;
     const commanderSleeveCount = safeCards.filter(c => c.place === 'commander').length || 1;
-
-    // Dump first card to confirm field names
-    if (safeCards.length > 0) {
-      await alertWait('beginGame: first card', JSON.stringify(safeCards[0], null, 2));
-    } else {
-      await alertWait('beginGame: WARN', 'safeCards is empty — no cards passed in');
-    }
 
     // Cards that have a sleeveId and imagePath, regardless of whether registered.
     // Unregistered sleeves are skipped gracefully inside the loop.
@@ -414,19 +370,6 @@ export async function beginGame(
       if (physZones && !physZones.has(effectiveZone)) return false;
       return true;
     }).sort((a, b) => (a.sleeveId ?? 0) - (b.sleeveId ?? 0));
-
-    // Show why each of the first 5 cards was included/excluded
-    const reasons = safeCards.slice(0, 5).map(c => {
-      const r: string[] = [];
-      if (c.sleeveId === null || c.sleeveId === undefined) r.push('sleeveId null');
-      if (!c.imagePath) r.push('no imagePath');
-      if (c.place !== 'commander' && physZones && !physZones.has(c.zone))
-        r.push(`zone ${c.zone} not in physZones [${[...physZones].join(',')}]`);
-      const registered = c.sleeveId != null && registeredSet.has(c.sleeveId);
-      return `${c.displayName ?? c.baseName}: ${r.length ? r.join(', ') : registered ? 'SEND ✓' : 'skip (not registered)'}`;
-    }).join('\n');
-    await alertWait(`beginGame: plan (first 5 of ${safeCards.length})`, reasons || '(no cards)');
-    await alertWait('beginGame: candidates', `${candidates.length} cards have sleeveId; registered=[${[...registeredSet].join(',')}]`);
 
     // Pre-split: log each unregistered sleeve once, then dispatch eligible
     // ones in parallel under a concurrency cap. `total` is fixed at dispatch
@@ -447,22 +390,18 @@ export async function beginGame(
       await sem.acquire();
       const start = Date.now();
       try {
-        await alertWait(`beginGame: sleeve ${sid}`, `Fetching image:\n${card.imagePath}`);
         const imageResp = await fetch(card.imagePath);
         if (!imageResp.ok) throw new Error(`Scryfall fetch failed: HTTP ${imageResp.status}`);
         const arrayBuffer = await imageResp.arrayBuffer();
 
-        await alertWait(`beginGame: sleeve ${sid}`, `Image fetched (${arrayBuffer.byteLength} bytes). POSTing to Pi…`);
         await sendToSleeve(sid, mtgDescriptor(sid, card.zone, commanderSleeveCount), arrayBuffer, serverUrl);
         const ms = Date.now() - start;
         console.log(`[Pi] sleeve ${sid} ✓ in ${ms}ms`);
-        await alertWait(`beginGame: sleeve ${sid} ✓`, `Sent OK in ${ms}ms`);
         return { ok: true as const, sid, ms };
       } catch (e) {
         const ms = Date.now() - start;
         const msg = e instanceof Error ? e.message : String(e);
         console.error(`[Pi] Sleeve ${sid} failed in ${ms}ms:`, msg);
-        await alertWait(`beginGame: sleeve ${sid} ERROR`, `${msg} (${ms}ms)`);
         return { ok: false as const, sid, ms, msg };
       } finally {
         sem.release();
@@ -478,11 +417,8 @@ export async function beginGame(
     );
     const elapsed = Date.now() - t0;
 
-    await alertWait('beginGame: DONE', `${okCount}/${total} registered sleeves pushed in ${elapsed}ms`);
     console.log(`[Pi] beginGame complete: ${okCount}/${total} registered sleeves pushed in ${elapsed}ms`);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error('[Pi] beginGame outer catch:', msg);
-    await alertWait('beginGame: OUTER ERROR', msg);
+    console.error('[Pi] beginGame outer catch:', e instanceof Error ? e.message : e);
   }
 }

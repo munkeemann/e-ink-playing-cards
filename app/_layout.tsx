@@ -15,8 +15,7 @@ import {
   EBGaramond_400Regular_Italic,
   EBGaramond_700Bold,
 } from '@expo-google-fonts/eb-garamond';
-import { loadSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
-import { configurePiDebug } from '../src/api/piServer';
+import { syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { ThemeProvider, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
 import TomeBackground from '../src/components/TomeBackground';
@@ -106,7 +105,6 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    loadSettings().then(s => configurePiDebug(s.devMode && s.piDebugAlerts));
     syncSleeveCountFromPi().catch(e => console.warn('[settings] sleeveCount sync failed:', e));
   }, []);
 

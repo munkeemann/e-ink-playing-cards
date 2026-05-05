@@ -7,7 +7,6 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
-import { configurePiDebug } from '../src/api/piServer';
 import { AppSettings } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
@@ -31,7 +30,6 @@ export default function SettingsScreen() {
     physicalZones: ['LIB', 'HND', 'BTFLD'],
     librarySleeveDepth: 1,
     devMode: false,
-    piDebugAlerts: false,
     theme: 'arcane',
   });
   useFocusEffect(
@@ -61,7 +59,6 @@ export default function SettingsScreen() {
 
   const handleSave = async () => {
     await saveSettings({ ...settings, theme: 'arcane' });
-    configurePiDebug(settings.devMode && settings.piDebugAlerts);
     router.back();
   };
 
@@ -127,31 +124,9 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={settings.devMode}
-              onValueChange={v =>
-                setSettings(prev => ({
-                  ...prev,
-                  devMode: v,
-                  piDebugAlerts: v ? prev.piDebugAlerts : false,
-                }))
-              }
+              onValueChange={v => setSettings(prev => ({ ...prev, devMode: v }))}
             />
           </View>
-          {settings.devMode && (
-            <View style={[styles.row, styles.rowDivider]}>
-              <View style={styles.rowLabelCol}>
-                <Text style={styles.labelText}>Pi Debug Alerts</Text>
-                <Text style={styles.subLabelText}>
-                  Show blocking step-by-step alerts for all Pi network calls
-                </Text>
-              </View>
-              <Switch
-                value={settings.piDebugAlerts}
-                onValueChange={v =>
-                  setSettings(prev => ({ ...prev, piDebugAlerts: v }))
-                }
-              />
-            </View>
-          )}
         </Section>
       </ScrollView>
 

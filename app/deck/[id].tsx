@@ -85,7 +85,6 @@ export default function DeckPreviewScreen() {
     physicalZones: ['LIB', 'HND', 'BTFLD'],
     librarySleeveDepth: 1,
     devMode: false,
-    piDebugAlerts: false,
     theme: 'arcane',
   });
 
