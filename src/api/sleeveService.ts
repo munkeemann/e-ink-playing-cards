@@ -158,23 +158,9 @@ export function clearMemo(sleeveId?: number): void {
 
 export async function prefetchCardBacks(): Promise<void> {
   console.log('[SLV] prefetchCardBacks enter', { cached: _cardBackCache !== null });
-  if (_cardBackCache) {
-    console.log('[SLV] prefetchCardBacks — already cached, skip');
-    return;
-  }
   const t0 = Date.now();
   try {
-    const src = Image.resolveAssetSource(CARD_BACK_ASSET);
-    if (!src?.uri) { console.warn('[SLV] prefetchCardBacks: no URI'); return; }
-    console.log('[SLV] prefetch warmup', src.uri);
-    try { await Image.prefetch(src.uri); } catch { /* best-effort */ }
-    console.log('[SLV] prefetchCardBacks fetch start —', src.uri);
-    const resp = await timedFetch(src.uri, {}, 5000);
-    console.log('[SLV] prefetchCardBacks fetch done in', Date.now() - t0, 'ms — status:', resp.status);
-    if (!resp.ok) { console.warn(`[SLV] prefetchCardBacks: HTTP ${resp.status}`); return; }
-    const bytes = await resp.arrayBuffer();
-    console.log('[SLV] prefetchCardBacks arrayBuffer done —', bytes.byteLength, 'bytes');
-    _cardBackCache = bytes;
+    await getCardBackBytes();
   } catch (e) {
     console.warn('[SLV] prefetchCardBacks ERROR:', e instanceof Error ? e.message : e);
   }
