@@ -25,7 +25,7 @@ import { ZONE_COLORS } from '../../src/mtg/zoneColors';
 import { Theme, useTheme } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
 import TomePageFrameDark from '../../src/components/TomePageFrameDark';
-import { getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
+import { DEFAULT_SETTINGS, getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
 import { AppSettings, CardInstance, Deck, TokenTemplate, TokenType } from '../../src/types';
 
 function ArtPopupContent({ card }: { card: CardInstance | null }) {
@@ -135,7 +135,7 @@ export default function InGameScreen() {
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState('');
   const [connectedSleeves, setConnectedSleeves] = useState<number[] | null>(null);
-  const [settings, setSettings] = useState<AppSettings>({ sleeveCount: 5, physicalZones: ['LIB', 'HND', 'BTFLD'], librarySleeveDepth: 1, devMode: false, theme: 'arcane' });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   const [activeZone, setActiveZone] = useState<Zone | null>(null);
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());

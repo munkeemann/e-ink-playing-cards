@@ -5,7 +5,7 @@ import { getRegisteredSleeves } from '../api/piServer';
 const KEY = 'decks_v1';
 const SETTINGS_KEY = 'app_settings';
 
-const DEFAULT_SETTINGS: AppSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
   sleeveCount: 5,
   physicalZones: ['LIB', 'HND', 'BTFLD'],
   librarySleeveDepth: 1,
@@ -15,7 +15,13 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 export async function loadDecks(): Promise<Deck[]> {
   const raw = await AsyncStorage.getItem(KEY);
-  return raw ? (JSON.parse(raw) as Deck[]) : [];
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as Deck[];
+  } catch (e) {
+    console.warn('[deckStorage] loadDecks: corrupt storage, returning empty:', e);
+    return [];
+  }
 }
 
 function deduplicateCommander(deck: Deck): Deck {

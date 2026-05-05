@@ -16,7 +16,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { assignSleeveIds, beginGame, getRegisteredSleeves } from '../../src/api/piServer';
 import { clearMemo } from '../../src/api/sleeveService';
 import { fetchPrintings, ScryfallPrinting } from '../../src/api/scryfall';
-import { getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
+import { DEFAULT_SETTINGS, getDeck, loadSettings, saveDeck } from '../../src/storage/deckStorage';
 import { AppSettings, CardInstance, Deck, TokenTemplate } from '../../src/types';
 import { Theme, useTheme } from '../../src/theme/colors';
 import { fonts } from '../../src/theme/fonts';
@@ -80,13 +80,7 @@ export default function DeckPreviewScreen() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [sending, setSending] = useState(false);
   const [sendProgress, setSendProgress] = useState({ sent: 0, total: 0 });
-  const [settings, setSettings] = useState<AppSettings>({
-    sleeveCount: 5,
-    physicalZones: ['LIB', 'HND', 'BTFLD'],
-    librarySleeveDepth: 1,
-    devMode: false,
-    theme: 'arcane',
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
   const [artPopupCard, setArtPopupCard] = useState<CardInstance | null>(null);

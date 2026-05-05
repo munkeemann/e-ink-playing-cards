@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, syncSleeveCountFromPi } from '../src/storage/deckStorage';
 import { AppSettings } from '../src/types';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
@@ -25,13 +25,7 @@ export default function SettingsScreen() {
   const colors = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [settings, setSettings] = useState<AppSettings>({
-    sleeveCount: 5,
-    physicalZones: ['LIB', 'HND', 'BTFLD'],
-    librarySleeveDepth: 1,
-    devMode: false,
-    theme: 'arcane',
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   useFocusEffect(
     useCallback(() => {
       loadSettings().then(setSettings);
