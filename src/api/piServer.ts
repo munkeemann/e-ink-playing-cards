@@ -192,12 +192,12 @@ export async function pushCardToSleeve(
     return;
   }
   try {
-    const imageResp = await fetch(card.imagePath);
+    const imageResp = await timedFetch(card.imagePath, {}, 5000);
     if (!imageResp.ok) return;
     const buf = await imageResp.arrayBuffer();
     await sendToSleeve(card.sleeveId, mtgDescriptor(card.sleeveId, card.zone, commanderSleeveCount), buf, serverUrl);
   } catch {
-    // Pi offline — fail silently
+    // Pi offline or Scryfall slow — fail silently
   }
 }
 
@@ -339,7 +339,7 @@ export async function beginGame(
       } finally {
         sem.release();
         sent++;
-        onProgress?.(sent, candidates.length);
+        onProgress?.(sent, total);
       }
     })());
 
