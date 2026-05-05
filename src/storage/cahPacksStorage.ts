@@ -17,5 +17,7 @@ export async function loadActivePacks(): Promise<string[] | null> {
 export async function saveActivePacks(ids: string[]): Promise<void> {
   try {
     await AsyncStorage.setItem(KEY, JSON.stringify(ids));
-  } catch {}
+  } catch (e) {
+    console.warn('[cahPacks] saveActivePacks failed:', e);
+  }
 }

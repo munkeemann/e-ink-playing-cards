@@ -474,7 +474,6 @@ export default function InGameScreen() {
     const deckCards = Array.isArray(deck?.cards) ? deck!.cards : [];
     const commanderCards = deckCards.filter(c => c.place === 'commander');
     const lib = deckCards.filter(c => c.zone === 'LIB' && c.place !== 'commander');
-    const shuffled = shuffle(lib).map((c, i) => ({ ...c, place: String(i + 1) }));
     const nonLibNonCommander = deckCards.filter(c => c.zone !== 'LIB' && c.place !== 'commander');
 
     // Non-LIB cards (hand, battlefield, graveyard, etc.) keep their current sleeveIds.

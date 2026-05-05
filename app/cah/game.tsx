@@ -64,7 +64,7 @@ async function pushUpdates(
         console.warn(`[DEAL] step done: capture sleeve=${u.sleeveId} FAILED — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
       }
     }
-    const faceBack = !!(u.descriptor as any)._useFaceBack;
+    const faceBack = !!u.descriptor._useFaceBack;
     console.log(`[DEAL] step: sendToSleeve sleeve=${u.sleeveId} imageBytes=${imageData?.byteLength ?? 'none'} faceBack=${faceBack} (+${Date.now()-t0}ms)`);
     try {
       await sendToSleeve(u.sleeveId, u.descriptor, imageData);

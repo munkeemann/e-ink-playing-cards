@@ -1,5 +1,5 @@
 import { CahCard, CahBlackCard, CahGameState, CahPhase } from '../types/cah';
-import { Descriptor, faceDownDescriptor } from '../api/sleeveService';
+import { Descriptor, cahBlackCardDescriptor, faceDownDescriptor } from '../api/sleeveService';
 import { cahSleeveId, totalCahSleeveCount } from './CahSleeveLayout';
 
 export interface CahSleeveUpdate {
@@ -62,19 +62,13 @@ export function createCahGame(
 
 // ── Descriptor builders ──────────────────────────────────────────────────────
 
-function blackCardDescriptor(): Descriptor {
-  return { v: 2, primary_label: 'CAH', secondary_label: 'Prompt' };
-}
-
 /**
  * White (response) card descriptor — labels intentionally omitted.
  * Player and card identifiers would defeat the bluff mechanic if rendered
  * on the physical sleeve; identity is tracked app-side only. The firmware
  * renders a blank merged region when both labels are absent.
- * The (playerIdx, handSlot) args are kept in the signature so callers
- * don't need to change; they're no longer used to build the descriptor.
  */
-function whiteCardDescriptor(_playerIdx: number, _handSlot: number): Descriptor {
+function whiteCardDescriptor(): Descriptor {
   return { v: 2 };
 }
 
@@ -88,7 +82,7 @@ export function allSleeveUpdates(state: CahGameState): CahSleeveUpdate[] {
   // Sleeve 1: black card
   updates.push({
     sleeveId: 1,
-    descriptor: blackCardDescriptor(),
+    descriptor: cahBlackCardDescriptor(),
     cardText: currentBlackCard.text,
     cardScheme: 'black',
   });
@@ -110,7 +104,7 @@ export function allSleeveUpdates(state: CahGameState): CahSleeveUpdate[] {
       if (isRevealed && card) {
         updates.push({
           sleeveId: sid,
-          descriptor: whiteCardDescriptor(p, k),
+          descriptor: whiteCardDescriptor(),
           cardText: card.text,
           cardScheme: 'white',
         });
@@ -118,7 +112,7 @@ export function allSleeveUpdates(state: CahGameState): CahSleeveUpdate[] {
         // Show white card text on physical sleeve (not face-down)
         updates.push({
           sleeveId: sid,
-          descriptor: whiteCardDescriptor(p, k),
+          descriptor: whiteCardDescriptor(),
           cardText: card.text,
           cardScheme: 'white',
         });
@@ -150,7 +144,7 @@ function deltaRevealUpdates(state: CahGameState): CahSleeveUpdate[] {
     if (k === submittedSlot && card) {
       updates.push({
         sleeveId: sid,
-        descriptor: whiteCardDescriptor(p, k),
+        descriptor: whiteCardDescriptor(),
         cardText: card.text,
         cardScheme: 'white',
       });

@@ -216,7 +216,7 @@ export async function sendToSleeve(
   const enc = new TextEncoder();
 
   // Strip the app-internal _useFaceBack flag before serialising for the wire
-  const { _useFaceBack: _fd, ...wireDescriptor } = descriptor;
+  const { _useFaceBack: _, ...wireDescriptor } = descriptor;
 
   const descPart =
     `--${boundary}${CRLF}` +
