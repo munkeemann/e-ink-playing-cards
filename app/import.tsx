@@ -173,7 +173,12 @@ export default function ImportDeckScreen() {
 
       type FetchedCard = (typeof results)[string];
       const printingMap = new Map<string, FetchedCard>();
-      for (const e of uniquePrintings) {
+      // Scryfall asks for ~75 ms between calls. Sequential await + sleep
+      // is sufficient for an import flow (typical 100-card deck = ~7s
+      // additional, dominated by network anyway).
+      const SCRYFALL_DELAY_MS = 75;
+      for (let i = 0; i < uniquePrintings.length; i++) {
+        const e = uniquePrintings[i];
         const key = `${e.setCode}/${e.collectorNumber}`;
         const fetched = await fetchCardByPrinting(e.setCode!, e.collectorNumber!);
         stepsDone++;
@@ -182,6 +187,9 @@ export default function ImportDeckScreen() {
           printingMap.set(key, fetched);
         } else {
           console.warn(`SAM1-40: ${key} not found, falling back to name lookup for "${e.name}"`);
+        }
+        if (i < uniquePrintings.length - 1) {
+          await new Promise(r => setTimeout(r, SCRYFALL_DELAY_MS));
         }
       }
 

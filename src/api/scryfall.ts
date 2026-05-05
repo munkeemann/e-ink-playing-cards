@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { timedFetch } from './http';
 
 const BULK_DATA_KEY = 'scryfall_bulk_data_v3';
 const BULK_TIMESTAMP_KEY = 'scryfall_bulk_last_fetched_v3';
@@ -58,9 +59,9 @@ function extractBackImageUrl(card: Record<string, unknown>): string {
 async function downloadBulkData(
   onDownloadProgress?: (percent: number) => void,
 ): Promise<SlimCard[]> {
-  const manifestResp = await fetch('https://api.scryfall.com/bulk-data', {
+  const manifestResp = await timedFetch('https://api.scryfall.com/bulk-data', {
     headers: { 'User-Agent': 'ECardsApp/1.0', Accept: 'application/json' },
-  });
+  }, 10_000);
   if (!manifestResp.ok) throw new Error('Failed to fetch Scryfall bulk data manifest');
   const manifest = await manifestResp.json() as {
     data: Array<{ type: string; download_uri: string }>;
@@ -68,9 +69,10 @@ async function downloadBulkData(
   const entry = manifest.data.find(e => e.type === 'oracle_cards');
   if (!entry) throw new Error('oracle_cards bulk data not found in manifest');
 
-  const dataResp = await fetch(entry.download_uri, {
+  // 60s — bulk file is ~150 MB, network-dependent.
+  const dataResp = await timedFetch(entry.download_uri, {
     headers: { 'User-Agent': 'ECardsApp/1.0' },
-  });
+  }, 60_000);
   if (!dataResp.ok) throw new Error('Failed to download bulk card data');
 
   const contentLength = dataResp.headers.get('content-length');
@@ -154,14 +156,14 @@ export async function fetchTokenImage(
   let results: Array<Record<string, unknown>> = [];
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const resp = await fetch(url, { headers });
+      const resp = await timedFetch(url, { headers }, 8_000);
       if (resp.ok) {
         const data = await resp.json() as { data?: Array<Record<string, unknown>> };
         results = data.data ?? [];
         break;
       }
     } catch {
-      // network error
+      // network error or timeout
     }
     if (attempt === 0) await new Promise(r => setTimeout(r, 500));
   }
@@ -214,9 +216,10 @@ export async function fetchCards(
     } else {
       // Bulk index miss — try Scryfall fuzzy search as fallback
       try {
-        const fuzzyResp = await fetch(
+        const fuzzyResp = await timedFetch(
           `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`,
           { headers: { 'User-Agent': 'ECardsApp/1.0', Accept: 'application/json' } },
+          8_000,
         );
         if (!fuzzyResp.ok) throw new Error(`Fuzzy search failed (${fuzzyResp.status})`);
         const fuzzyCard = await fuzzyResp.json() as Record<string, unknown>;
@@ -257,9 +260,10 @@ export async function fetchCardByPrinting(
   collectorNumber: string,
 ): Promise<FetchedCard | null> {
   try {
-    const resp = await fetch(
+    const resp = await timedFetch(
       `https://api.scryfall.com/cards/${encodeURIComponent(setCode.toLowerCase())}/${encodeURIComponent(collectorNumber)}`,
       { headers: { 'User-Agent': 'ECardsApp/1.0', Accept: 'application/json' } },
+      8_000,
     );
     if (resp.status === 404) return null;
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -296,9 +300,9 @@ export async function fetchPrintings(cardName: string): Promise<ScryfallPrinting
     `https://api.scryfall.com/cards/search?q=${query}&unique=prints&order=released&dir=desc`;
 
   while (url) {
-    const resp = await fetch(url, {
+    const resp = await timedFetch(url, {
       headers: { 'User-Agent': 'ECardsApp/1.0', Accept: 'application/json' },
-    });
+    }, 8_000);
     if (!resp.ok) break;
     const data = await resp.json() as {
       data: Array<Record<string, unknown>>;
