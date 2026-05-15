@@ -1163,34 +1163,29 @@ export default function InGameScreen() {
               : connectedSleeves.length === 0 ? 'No sleeves connected'
               : `${connectedSleeves.length} sleeve${connectedSleeves.length === 1 ? '' : 's'} connected`}
           </Text>
-          <View style={styles.headerMetaRight}>
-            <Text style={styles.settingsIndicator}>
-              {settings.sleeveCount} sleeves · {settings.physicalZones.join(' ')}
-            </Text>
-            <Pressable
-              onPress={() =>
-                Alert.alert(
-                  'End Game',
-                  'End this game session and return to the deck preview?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'End Game',
-                      style: 'destructive',
-                      onPress: async () => {
-                        if (!deck) return;
-                        const updated = { ...deck, gameInProgress: false };
-                        await saveDeck(updated);
-                        router.back();
-                      },
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                'End Game',
+                'End this game session and return to the deck preview?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'End Game',
+                    style: 'destructive',
+                    onPress: async () => {
+                      if (!deck) return;
+                      const updated = { ...deck, gameInProgress: false };
+                      await saveDeck(updated);
+                      router.back();
                     },
-                  ],
-                )
-              }
-            >
-              <Text style={styles.endGameBtn}>End Game</Text>
-            </Pressable>
-          </View>
+                  },
+                ],
+              )
+            }
+          >
+            <Text style={styles.endGameBtn}>End Game</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -1866,10 +1861,8 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     fontSize: 11,
   },
   headerMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  headerMetaRight: { alignItems: 'flex-end', gap: 4 },
   sleeveStatus: { color: colors.status.success, fontFamily: fonts.body, fontSize: 11 },
   sleeveStatusNone: { color: colors.status.danger },
-  settingsIndicator: { color: colors.text.secondary, fontFamily: fonts.body, fontSize: 11 },
   endGameBtn: { color: colors.status.danger, fontFamily: fonts.display, fontSize: 11 },
 
   zoneGrid: { paddingHorizontal: 0, paddingTop: 12, paddingBottom: 4, gap: 8 },
