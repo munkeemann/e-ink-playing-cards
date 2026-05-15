@@ -1,0 +1,16 @@
+<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Stylized planeswalker-evocative silhouette: 14-point jagged figure
+    with apex, shoulders, outstretched arms, hips and feet. An artistic
+    interpretation in the spirit of the MTG planeswalker glyph rather
+    than a reproduction of the trademarked symbol.
+  -->
+  <path
+    d="M 30 5 L 36 20 L 31 22 L 44 32 L 33 34 L 42 50 L 33 54 L 30 49 L 27 54 L 18 50 L 27 34 L 16 32 L 29 22 L 24 20 Z"
+    stroke="currentColor"
+    stroke-width="1.4"
+    stroke-linejoin="round"
+    fill="currentColor"
+    fill-opacity="0.18"
+  />
+</svg>

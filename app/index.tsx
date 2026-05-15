@@ -21,10 +21,10 @@ import { clearMemo } from '../src/api/sleeveService';
 import TomePageFrame from '../src/components/TomePageFrame';
 import TomeTileFrame from '../src/components/TomeTileFrame';
 import {
-  AmpersandMark,
-  CardsMark,
+  CahCardsMark,
   PlaneswalkerMark,
   SpadeMark,
+  SpellbookMark,
 } from '../src/components/marks';
 import { Theme, useTheme } from '../src/theme/colors';
 import { fonts } from '../src/theme/fonts';
@@ -43,8 +43,8 @@ type GameDef = {
 const GAMES: GameDef[] = [
   { id: 'mtg',   shortLabel: 'MTG',     title: 'Magic: The Gathering',    Mark: PlaneswalkerMark, available: true, route: '/mtg' },
   { id: 'poker', shortLabel: "Hold'em", title: "Texas Hold'em",           Mark: SpadeMark,        available: true, route: '/holdem/setup' },
-  { id: 'cah',   shortLabel: 'CAH',     title: 'Cards Against Humanity',  Mark: CardsMark,        available: true, route: '/cah/setup' },
-  { id: 'dnd',   shortLabel: 'D&D',     title: 'D&D Spell Cards',         Mark: AmpersandMark,    available: true, route: '/dnd' },
+  { id: 'cah',   shortLabel: 'CAH',     title: 'Cards Against Humanity',  Mark: CahCardsMark,     available: true, route: '/cah/setup' },
+  { id: 'dnd',   shortLabel: 'D&D',     title: 'D&D Spell Cards',         Mark: SpellbookMark,    available: true, route: '/dnd' },
 ];
 
 type ResumeTarget =
