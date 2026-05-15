@@ -228,9 +228,6 @@ export default function CahSetupScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Cards Against Humanity</Text>
-          <Text style={styles.subtitle}>
-            {ruleset === 'maxs' ? "Ruleset: Max's Rules" : 'Ruleset: Official'}
-          </Text>
         </View>
 
         {/* Ruleset picker */}
@@ -296,7 +293,7 @@ export default function CahSetupScreen() {
               </View>
               <View style={[styles.stepperRow, styles.stepperRowDivider]}>
                 <View style={styles.stepperLabelCol}>
-                  <Text style={styles.stepperLabel}>Cards per player (K)</Text>
+                  <Text style={styles.stepperLabel}>Cards per player</Text>
                   <Text style={styles.stepperHint}>{MAXS_MIN_K}–{MAXS_MAX_K} cards per player</Text>
                 </View>
                 <Stepper
@@ -397,13 +394,6 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
   },
-  subtitle: {
-    color: colors.text.inkSoft,
-    fontFamily: fonts.bodyItalic,
-    fontSize: 12,
-    marginTop: 4,
-  },
-
   // Stepper group (replaces leather card)
   stepperGroup: {
     borderTopWidth: StyleSheet.hairlineWidth,
