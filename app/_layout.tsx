@@ -43,6 +43,8 @@ function StackWithTheme() {
         name="index"
         options={{
           headerShown: false,
+          title: 'Home',
+          headerBackTitle: 'Home',
         }}
       />
       <Stack.Screen
