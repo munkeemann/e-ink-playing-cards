@@ -15,7 +15,9 @@ interface CardState {
 }
 
 function rafTick(): Promise<void> {
-  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  // Wrap the inner resolve so the FrameRequestCallback's time arg isn't
+  // bound to the Promise resolver (which expects void, not number).
+  return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 }
 
 async function toArrayBuffer(base64: string): Promise<ArrayBuffer> {
