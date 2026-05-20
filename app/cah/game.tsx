@@ -19,6 +19,7 @@ import {
 import { loadCahGame, saveCahGame, clearCahGame } from '../../src/storage/cahStorage';
 import { sendToSleeve, clearMemo } from '../../src/api/sleeveService';
 import { getRegisteredSleeves } from '../../src/api/piServer';
+import { PI_CONCURRENCY, makeSemaphore } from '../../src/api/concurrency';
 import { CahGameState } from '../../src/types/cah';
 import CardRenderer, { CardRendererRef } from '../../src/shared/CardRenderer';
 import { Theme, useTheme } from '../../src/theme/colors';
@@ -47,11 +48,12 @@ async function pushUpdates(
   console.log(`[DEAL] step done: getRegisteredSleeves — [${[...registered].sort((a,b)=>a-b).join(', ')}] (+${Date.now()-t0}ms)`);
   console.log(`[DEAL] pushUpdates count=${updates.length}, registered=${registered.size}`);
 
+  // Phase A — serial captures. CardRenderer is a single off-screen
+  // component, so concurrent captures aren't safe. Updates without
+  // cardText skip capture (descriptor-only / face-back).
+  type Prepared = { u: CahSleeveUpdate; imageData?: ArrayBuffer };
+  const prepared: Prepared[] = [];
   for (const u of updates) {
-    if (!registered.has(u.sleeveId)) {
-      console.log(`[DEAL] sleeve ${u.sleeveId} not registered — skipping`);
-      continue;
-    }
     let imageData: ArrayBuffer | undefined;
     if (u.cardText && rendererRef.current) {
       console.log(`[DEAL] step: capture sleeve=${u.sleeveId} text="${u.cardText.slice(0, 30)}" (+${Date.now()-t0}ms)`);
@@ -64,15 +66,47 @@ async function pushUpdates(
         console.warn(`[DEAL] step done: capture sleeve=${u.sleeveId} FAILED — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
       }
     }
-    const faceBack = !!u.descriptor._useFaceBack;
-    console.log(`[DEAL] step: sendToSleeve sleeve=${u.sleeveId} imageBytes=${imageData?.byteLength ?? 'none'} faceBack=${faceBack} (+${Date.now()-t0}ms)`);
+    prepared.push({ u, imageData });
+  }
+
+  // Phase B — parallel sends under PI_CONCURRENCY cap. Sleeves not in the
+  // registered set are dropped here (preserves b361894 skip behavior); the
+  // rest fan out via the shared semaphore so the network phase isn't the
+  // bottleneck anymore.
+  const eligible: Prepared[] = [];
+  for (const p of prepared) {
+    if (registered.has(p.u.sleeveId)) eligible.push(p);
+    else console.log(`[DEAL] sleeve ${p.u.sleeveId} not registered — skipping`);
+  }
+  const total = eligible.length;
+  const sem = makeSemaphore(PI_CONCURRENCY);
+  const sendT0 = Date.now();
+
+  const tasks = eligible.map(({ u, imageData }) => (async () => {
+    await sem.acquire();
+    const start = Date.now();
     try {
       await sendToSleeve(u.sleeveId, u.descriptor, imageData);
-      console.log(`[DEAL] step done: sendToSleeve sleeve=${u.sleeveId} OK (+${Date.now()-t0}ms)`);
+      const ms = Date.now() - start;
+      console.log(`[DEAL] sleeve ${u.sleeveId} ✓ in ${ms}ms`);
+      return { ok: true as const };
     } catch (e) {
-      console.warn(`[DEAL] step done: sendToSleeve sleeve=${u.sleeveId} ERROR — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
+      const ms = Date.now() - start;
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[DEAL] sleeve ${u.sleeveId} ✗ ${msg} (${ms}ms)`);
+      return { ok: false as const };
+    } finally {
+      sem.release();
     }
-  }
+  })());
+
+  const results = await Promise.allSettled(tasks);
+  const okCount = results.reduce(
+    (n, r) => n + (r.status === 'fulfilled' && r.value.ok ? 1 : 0),
+    0,
+  );
+  const elapsed = Date.now() - sendT0;
+  console.log(`[DEAL] complete: ${okCount}/${total} in ${elapsed}ms`);
 }
 
 export default function CahGameScreen() {
