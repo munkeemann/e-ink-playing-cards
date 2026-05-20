@@ -12,8 +12,10 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import {
   advance,
+  allSleeveUpdates,
   cardLabel,
   PHASE_BUTTON_LABEL,
+  SleeveUpdate,
   SUIT_SYMBOL,
 } from '../../src/holdem/HoldemGame';
 import {
@@ -243,6 +245,50 @@ export default function HoldemGameScreen() {
 
   const layout = buildSleeveLayout(state.playerCount);
 
+  // Push a batch of sleeve updates: fetch registered set, then per-update
+  // fetch card bytes (skin-aware) and POST to the sleeve. Shared between
+  // handleAdvance (game-progressing) and handleResync (read-only re-push).
+  // The caller owns clearMemo() — this helper does not touch the memo.
+  const pushUpdates = async (
+    sleeveUpdates: SleeveUpdate[],
+    skin: string,
+    tag: string,
+    t0: number,
+  ): Promise<void> => {
+    console.log(`[${tag}] step: getRegisteredSleeves (+${Date.now()-t0}ms)`);
+    const registered = new Set(await getRegisteredSleeves());
+    console.log(`[${tag}] step done: getRegisteredSleeves — [${[...registered].sort((a,b)=>a-b).join(', ')}] (+${Date.now()-t0}ms)`);
+    console.log(`[${tag}] sleeveUpdates count=${sleeveUpdates.length}, registered count=${registered.size}`);
+
+    for (const u of sleeveUpdates) {
+      if (!registered.has(u.sleeveId)) {
+        console.log(`[${tag}] sleeve ${u.sleeveId} not registered — skipping`);
+        continue;
+      }
+      let imageData: ArrayBuffer | undefined;
+      let imageSource: 'skin' | 'default' | 'none' = 'none';
+      if (u.card) {
+        const assetKey = `card_${u.card.rank}${u.card.suit}`;
+        console.log(`[${tag}] step: getCardBytes sleeve=${u.sleeveId} key=${assetKey} skin=${skin} (+${Date.now()-t0}ms)`);
+        try {
+          const result = await getCardBytes(u.card.rank, u.card.suit, skin);
+          imageData = result.data;
+          imageSource = result.source;
+          console.log(`[${tag}] step done: getCardBytes sleeve=${u.sleeveId} — ${imageData.byteLength} bytes source=${imageSource} (+${Date.now()-t0}ms)`);
+        } catch (e) {
+          console.warn(`[${tag}] step done: getCardBytes sleeve=${u.sleeveId} THREW — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
+        }
+      }
+      console.log(`[${tag}] step: sendToSleeve sleeve=${u.sleeveId} bytes=${imageData?.byteLength ?? 0} source=${imageSource} (+${Date.now()-t0}ms)`);
+      try {
+        await sendToSleeve(u.sleeveId, u.descriptor, imageData);
+        console.log(`[${tag}] step done: sendToSleeve sleeve=${u.sleeveId} OK (+${Date.now()-t0}ms)`);
+      } catch (e) {
+        console.warn(`[${tag}] step done: sendToSleeve sleeve=${u.sleeveId} ERROR — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
+      }
+    }
+  };
+
   const handleAdvance = async () => {
     if (busy) return;
     setBusy(true);
@@ -258,44 +304,33 @@ export default function HoldemGameScreen() {
 
       if (newState.phase === 'pre_deal') clearMemo();
 
-      console.log(`[DEAL] step: getRegisteredSleeves (+${Date.now()-t0}ms)`);
-      const registered = new Set(await getRegisteredSleeves());
-      console.log(`[DEAL] step done: getRegisteredSleeves — [${[...registered].sort((a,b)=>a-b).join(', ')}] (+${Date.now()-t0}ms)`);
-      console.log(`[DEAL] sleeveUpdates count=${sleeveUpdates.length}, registered count=${registered.size}`);
-
-      for (const u of sleeveUpdates) {
-        if (!registered.has(u.sleeveId)) {
-          console.log(`[DEAL] sleeve ${u.sleeveId} not registered — skipping`);
-          continue;
-        }
-        let imageData: ArrayBuffer | undefined;
-        let imageSource: 'skin' | 'default' | 'none' = 'none';
-        if (u.card) {
-          const assetKey = `card_${u.card.rank}${u.card.suit}`;
-          console.log(`[DEAL] step: getCardBytes sleeve=${u.sleeveId} key=${assetKey} skin=${state.cardSkin ?? 'default'} (+${Date.now()-t0}ms)`);
-          try {
-            const result = await getCardBytes(u.card.rank, u.card.suit, state.cardSkin ?? 'default');
-            imageData = result.data;
-            imageSource = result.source;
-            console.log(`[DEAL] step done: getCardBytes sleeve=${u.sleeveId} — ${imageData.byteLength} bytes source=${imageSource} (+${Date.now()-t0}ms)`);
-          } catch (e) {
-            console.warn(`[DEAL] step done: getCardBytes sleeve=${u.sleeveId} THREW — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
-          }
-        }
-        console.log(`[DEAL] step: sendToSleeve sleeve=${u.sleeveId} bytes=${imageData?.byteLength ?? 0} source=${imageSource} (+${Date.now()-t0}ms)`);
-        try {
-          await sendToSleeve(u.sleeveId, u.descriptor, imageData);
-          console.log(`[DEAL] step done: sendToSleeve sleeve=${u.sleeveId} OK (+${Date.now()-t0}ms)`);
-        } catch (e) {
-          console.warn(`[DEAL] step done: sendToSleeve sleeve=${u.sleeveId} ERROR — ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
-        }
-      }
+      await pushUpdates(sleeveUpdates, newState.cardSkin ?? 'default', 'DEAL', t0);
 
       console.log(`[DEAL] complete — all sleeves done (+${Date.now()-t0}ms)`);
     } catch (e) {
       console.error(`[DEAL] ERROR: ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
     } finally {
       console.log(`[DEAL] finally — setBusy(false) (+${Date.now()-t0}ms)`);
+      setBusy(false);
+    }
+  };
+
+  // Re-push the current phase's sleeve state without advancing — recovery
+  // for a glitched/rebooted sleeve. clearMemo() up front so the dedup memo
+  // doesn't skip every send.
+  const handleResync = async () => {
+    if (busy) return;
+    setBusy(true);
+    const t0 = Date.now();
+    console.log(`[RESYNC] start — phase=${state.phase} players=${state.playerCount} skin=${state.cardSkin ?? 'default'}`);
+    try {
+      clearMemo();
+      const updates = allSleeveUpdates(state);
+      await pushUpdates(updates, state.cardSkin ?? 'default', 'RESYNC', t0);
+      console.log(`[RESYNC] complete (+${Date.now()-t0}ms)`);
+    } catch (e) {
+      console.error(`[RESYNC] ERROR: ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
+    } finally {
       setBusy(false);
     }
   };
@@ -400,6 +435,17 @@ export default function HoldemGameScreen() {
           </View>
         </View>
 
+        {/* Resync sleeves — re-push current state without changing game */}
+        <Button
+          variant="secondary"
+          register="dark"
+          onPress={handleResync}
+          disabled={busy}
+          style={styles.resyncBtn}
+        >
+          {busy ? '…' : '↻ Resync Sleeves'}
+        </Button>
+
         {/* End game */}
         <Button variant="secondary" onPress={handleEnd} register="dark" style={styles.endBtn}>
           End Game
@@ -500,5 +546,6 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  endBtn: { marginTop: 8 },
+  resyncBtn: { marginTop: 8 },
+  endBtn: { marginTop: 4 },
 }); }

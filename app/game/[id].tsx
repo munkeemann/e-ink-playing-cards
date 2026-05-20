@@ -407,6 +407,37 @@ export default function InGameScreen() {
     beginGame(updatedCards, sleeves, undefined, undefined, settings).catch(() => {});
   };
 
+  // ─── Resync sleeves — re-push the current deck state without changing it ─
+  // Recovery for a glitched/rebooted sleeve. beginGame is pure dispatch
+  // (filters by current zone+sleeveId+imagePath off the input cards; no
+  // shuffle, no reassign). clearMemo() up front so the dedup memo doesn't
+  // skip every send. Refetches the registered set so a just-reconnected
+  // sleeve gets included (connectedSleeves may be stale from focus).
+  const handleResync = async () => {
+    if (!deck || busy) return;
+    setBusy(true);
+    setBusyLabel('Resyncing sleeves…');
+    const t0 = Date.now();
+    console.log(`[RESYNC] start — deck=${deck.name}`);
+    try {
+      clearMemo();
+      const sleeves = await getRegisteredSleeves();
+      setConnectedSleeves(sleeves);
+      console.log(`[RESYNC] registered=${sleeves.length}`);
+      if (sleeves.length === 0) {
+        console.log('[RESYNC] no sleeves connected — nothing to do');
+        return;
+      }
+      await beginGame(deck.cards, sleeves, undefined, undefined, settings);
+      console.log(`[RESYNC] complete (+${Date.now()-t0}ms)`);
+    } catch (e) {
+      console.error(`[RESYNC] ERROR: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setBusy(false);
+      setBusyLabel('');
+    }
+  };
+
   // ─── Push images only for sleeves whose card assignment changed ───────────
   // Use this instead of syncSleeves for single-card zone moves to avoid the
   // clear+display race condition. Only sleeves that now carry a *different*
@@ -1163,29 +1194,34 @@ export default function InGameScreen() {
               : connectedSleeves.length === 0 ? 'No sleeves connected'
               : `${connectedSleeves.length} sleeve${connectedSleeves.length === 1 ? '' : 's'} connected`}
           </Text>
-          <Pressable
-            onPress={() =>
-              Alert.alert(
-                'End Game',
-                'End this game session and return to the deck preview?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'End Game',
-                    style: 'destructive',
-                    onPress: async () => {
-                      if (!deck) return;
-                      const updated = { ...deck, gameInProgress: false };
-                      await saveDeck(updated);
-                      router.back();
+          <View style={styles.headerMetaActions}>
+            <Pressable onPress={handleResync} disabled={busy} hitSlop={8}>
+              <Text style={[styles.resyncBtn, busy && styles.resyncBtnDisabled]}>↻ Resync</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  'End Game',
+                  'End this game session and return to the deck preview?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'End Game',
+                      style: 'destructive',
+                      onPress: async () => {
+                        if (!deck) return;
+                        const updated = { ...deck, gameInProgress: false };
+                        await saveDeck(updated);
+                        router.back();
+                      },
                     },
-                  },
-                ],
-              )
-            }
-          >
-            <Text style={styles.endGameBtn}>End Game</Text>
-          </Pressable>
+                  ],
+                )
+              }
+            >
+              <Text style={styles.endGameBtn}>End Game</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -1861,8 +1897,11 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     fontSize: 11,
   },
   headerMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  headerMetaActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   sleeveStatus: { color: colors.status.success, fontFamily: fonts.body, fontSize: 11 },
   sleeveStatusNone: { color: colors.status.danger },
+  resyncBtn: { color: colors.accent.primary, fontFamily: fonts.display, fontSize: 11 },
+  resyncBtnDisabled: { color: colors.text.disabled },
   endGameBtn: { color: colors.status.danger, fontFamily: fonts.display, fontSize: 11 },
 
   zoneGrid: { paddingHorizontal: 0, paddingTop: 12, paddingBottom: 4, gap: 8 },

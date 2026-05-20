@@ -11,6 +11,7 @@ import {
 import { router, useFocusEffect } from 'expo-router';
 import {
   advanceCah,
+  allSleeveUpdates,
   CAH_PHASE_BUTTON_LABEL,
   CahSleeveUpdate,
   totalCahSleeveCount,
@@ -209,6 +210,29 @@ export default function CahGameScreen() {
   //   }
   // };
 
+  // Re-push current sleeve state to all sleeves — recovery action for a
+  // glitched/rebooted sleeve. Reuses the existing two-phase pushUpdates
+  // pipeline. clearMemo() up front so the dedup memo doesn't skip every
+  // send when the app's "last known" fingerprint matches what the (now
+  // blank) sleeve actually displays.
+  const handleResync = async () => {
+    if (busy) return;
+    setBusy(true);
+    const t0 = Date.now();
+    console.log(`[RESYNC] start — phase=${state.phase} players=${state.playerCount}`);
+    try {
+      clearMemo();
+      const updates = allSleeveUpdates(state);
+      console.log(`[RESYNC] dispatching ${updates.length} sleeve updates`);
+      await pushUpdates(updates, rendererRef, t0);
+      console.log(`[RESYNC] complete (+${Date.now()-t0}ms)`);
+    } catch (e) {
+      console.error(`[RESYNC] ERROR: ${e instanceof Error ? e.message : e} (+${Date.now()-t0}ms)`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleEnd = () => {
     Alert.alert('End Game', 'End this session and return to game select?', [
       { text: 'Cancel', style: 'cancel' },
@@ -309,6 +333,17 @@ export default function CahGameScreen() {
         {/* {phase === 'winner' && roundWinner !== null && (
           <Pressable ... Next Round → </Pressable>
         )} */}
+
+        {/* Resync sleeves — re-push current state without changing game */}
+        <Button
+          variant="secondary"
+          register="dark"
+          onPress={handleResync}
+          disabled={busy}
+          style={styles.resyncBtn}
+        >
+          {busy ? '…' : '↻ Resync Sleeves'}
+        </Button>
 
         {/* End game */}
         <Button variant="secondary" register="dark" onPress={handleEnd} style={styles.endBtn}>
@@ -463,5 +498,6 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
   winPickBtnText: { color: colors.text.primary, fontFamily: fonts.display, fontSize: 13 },
   winPickBtnTextWon: { color: colors.status.success },
 
-  endBtn: { marginTop: 8 },
+  resyncBtn: { marginTop: 8 },
+  endBtn: { marginTop: 4 },
 }); }
