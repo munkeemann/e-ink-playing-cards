@@ -9,11 +9,11 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
-import { loadDecks } from '../src/storage/deckStorage';
+import { DEFAULT_SETTINGS, loadDecks, loadSettings } from '../src/storage/deckStorage';
 import { loadHoldemGame } from '../src/storage/holdemStorage';
 import { loadCahGame } from '../src/storage/cahStorage';
 import { loadMaxsGame } from '../src/storage/cahMaxsStorage';
-import { Deck } from '../src/types';
+import { AppSettings, Deck } from '../src/types';
 import { HoldemGameState } from '../src/types/holdem';
 import { CahGameState } from '../src/types/cah';
 import { CahMaxsGameState } from '../src/types/cah_maxs';
@@ -136,9 +136,11 @@ export default function GameSelectScreen() {
   const colors = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [resume, setResume] = useState<ResumeTarget | null>(null);
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useFocusEffect(
     useCallback(() => {
+      loadSettings().then(setSettings);
       Promise.all([
         loadDecks().then(decks => {
           const deck = decks
@@ -184,10 +186,10 @@ export default function GameSelectScreen() {
             ? `CAH Max's — ${resume.game.playerCount} players`
             : null;
 
-  const TileButton = ({ game }: { game: GameDef }) => {
+  const TileButton = ({ game, wide = false }: { game: GameDef; wide?: boolean }) => {
     const Mark = game.Mark;
     return (
-      <View style={styles.tileWrap}>
+      <View style={[styles.tileWrap, wide && styles.tileWide]}>
         <Pressable
           onPress={() => { clearMemo(); router.push(game.route as any); }}
           style={styles.tilePressable}
@@ -254,10 +256,11 @@ export default function GameSelectScreen() {
             <TileButton game={GAMES[2]} />
             <TileButton game={GAMES[3]} />
           </View>
-          <View style={styles.tileRow}>
-            <TileButton game={DIAGNOSTICS_TILE} />
-            <View style={[styles.tileWrap, styles.tilePhantom]} />
-          </View>
+          {settings.devMode && (
+            <View style={styles.tileRow}>
+              <TileButton game={DIAGNOSTICS_TILE} wide />
+            </View>
+          )}
         </View>
       </TomePageFrame>
     </View>
@@ -328,7 +331,12 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     flex: 1,
     aspectRatio: 4 / 5,
   },
-  tilePhantom: { opacity: 0 },
+  // Wide variant for the dev-gated Diagnostics tile: spans the full row at
+  // a 2:1 banner aspect so it reads as a deliberate 5th element rather
+  // than a half-row tile orphaned next to empty space.
+  tileWide: {
+    aspectRatio: 2 / 1,
+  },
   tilePressable: {
     flex: 1,
   },
