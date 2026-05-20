@@ -1,5 +1,5 @@
 import { AppSettings, CardInstance } from '../types';
-import { PI_SERVER, mtgDescriptor, sendToSleeve } from './sleeveService';
+import { Descriptor, PI_SERVER, mtgDescriptor, sendToSleeve } from './sleeveService';
 import { timedFetch } from './http';
 import { PI_CONCURRENCY, makeSemaphore } from './concurrency';
 
@@ -371,4 +371,145 @@ export async function beginGame(
   } catch (e) {
     console.error('[Pi] beginGame outer catch:', e instanceof Error ? e.message : e);
   }
+}
+
+// ── Diagnostics ──────────────────────────────────────────────────────────────
+
+export interface SleeveRegistryEntry {
+  id: number;
+  ip: string;
+}
+
+/**
+ * Returns the registered sleeves as id+ip pairs, sorted by id. Empty array
+ * if the Pi is unreachable. Use this on the diagnostics screen where IPs
+ * are user-visible; getRegisteredSleeves() remains for callers that only
+ * need the id set.
+ */
+export async function getSleeveRegistry(serverUrl: string = PI_SERVER): Promise<SleeveRegistryEntry[]> {
+  const url = `${serverUrl}/sleeves`;
+  try {
+    const resp = await timedFetch(url, {}, PI_FETCH_TIMEOUT_MS);
+    if (!resp.ok) return [];
+    const raw = await resp.text();
+    const data = JSON.parse(raw) as unknown;
+    if (data && typeof data === 'object' && 'sleeves' in data) {
+      const sleevesMap = (data as { sleeves: Record<string, unknown> }).sleeves;
+      if (sleevesMap && typeof sleevesMap === 'object') {
+        return Object.entries(sleevesMap)
+          .map(([k, v]) => ({ id: Number(k), ip: typeof v === 'string' ? v : '' }))
+          .filter(e => !isNaN(e.id))
+          .sort((a, b) => a.id - b.id);
+      }
+    }
+    console.warn(`[Pi] getSleeveRegistry: unrecognised format: ${JSON.stringify(data)}`);
+    return [];
+  } catch (e) {
+    console.warn('[Pi] getSleeveRegistry error:', e instanceof Error ? e.message : e);
+    return [];
+  }
+}
+
+export interface DiagResult {
+  ok: number;
+  fail: number;
+  failures: Array<{ id: number; error: string }>;
+  durationMs: number;
+}
+
+// Generic identify descriptor — used by all identify pushes. The zone_strip
+// is included with MTG cells so the firmware has a strip to render; the
+// active_index doesn't matter for an identification image where the JPEG
+// is the focal content.
+const IDENTIFY_ZONE_CELLS = ['LIB', 'HND', 'BTFLD', 'GRV', 'EXL', 'CMD'];
+
+function identifyDescriptor(id: number): Descriptor {
+  return {
+    v: 2,
+    primary_label: `Sleeve ${id}`,
+    zone_strip: { cells: IDENTIFY_ZONE_CELLS, active_index: 0 },
+  };
+}
+
+/**
+ * Pushes a single identify image to one sleeve. Callers (diagnostics
+ * single-row "Identify" tap) own the image generation via the off-screen
+ * IdentifyCard renderer.
+ */
+export async function identifySleeve(
+  id: number,
+  imageData: ArrayBuffer,
+  serverUrl: string = PI_SERVER,
+): Promise<void> {
+  await sendToSleeve(id, identifyDescriptor(id), imageData, serverUrl);
+}
+
+/**
+ * Fans out identify-image POSTs in parallel under PI_CONCURRENCY. Captures
+ * must be done serially by the caller before calling this (single off-screen
+ * renderer is not safe to drive concurrently); `prepared` is the result of
+ * that serial capture pass — one entry per sleeve to identify.
+ */
+export async function identifyAllSleeves(
+  prepared: Array<{ id: number; imageData: ArrayBuffer }>,
+  onProgress?: (sent: number, total: number) => void,
+  serverUrl: string = PI_SERVER,
+): Promise<DiagResult> {
+  const t0 = Date.now();
+  const total = prepared.length;
+  const sem = makeSemaphore(PI_CONCURRENCY);
+  let sent = 0;
+  const failures: Array<{ id: number; error: string }> = [];
+
+  const tasks = prepared.map(({ id, imageData }) => (async () => {
+    await sem.acquire();
+    try {
+      await sendToSleeve(id, identifyDescriptor(id), imageData, serverUrl);
+      return { ok: true as const };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e);
+      failures.push({ id, error });
+      return { ok: false as const };
+    } finally {
+      sem.release();
+      sent++;
+      onProgress?.(sent, total);
+    }
+  })());
+
+  const results = await Promise.allSettled(tasks);
+  const ok = results.reduce((n, r) => n + (r.status === 'fulfilled' && r.value.ok ? 1 : 0), 0);
+  return { ok, fail: total - ok, failures, durationMs: Date.now() - t0 };
+}
+
+/**
+ * Fans out /clear POSTs to every registered sleeve in parallel under
+ * PI_CONCURRENCY. clearSleeve() swallows errors internally, so this
+ * always reports `fail: 0` — the result is still useful for the OK count
+ * and total elapsed time.
+ */
+export async function clearAllSleeves(
+  onProgress?: (sent: number, total: number) => void,
+  serverUrl: string = PI_SERVER,
+): Promise<DiagResult> {
+  const t0 = Date.now();
+  const registry = await getSleeveRegistry(serverUrl);
+  const total = registry.length;
+  const sem = makeSemaphore(PI_CONCURRENCY);
+  let sent = 0;
+
+  const tasks = registry.map(({ id }) => (async () => {
+    await sem.acquire();
+    try {
+      await clearSleeve(id, serverUrl);
+      return { ok: true as const };
+    } finally {
+      sem.release();
+      sent++;
+      onProgress?.(sent, total);
+    }
+  })());
+
+  await Promise.allSettled(tasks);
+  return { ok: total, fail: 0, failures: [], durationMs: Date.now() - t0 };
 }

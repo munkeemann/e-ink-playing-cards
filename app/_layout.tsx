@@ -92,6 +92,7 @@ function StackWithTheme() {
       <Stack.Screen name="game/[id]" options={{ title: 'In Game' }} />
       <Stack.Screen name="scry" options={{ title: 'Scry' }} />
       <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="diagnostics" options={{ title: 'Diagnostics' }} />
     </Stack>
   );
 }

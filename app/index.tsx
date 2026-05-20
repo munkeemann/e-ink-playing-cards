@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { loadDecks } from '../src/storage/deckStorage';
 import { loadHoldemGame } from '../src/storage/holdemStorage';
 import { loadCahGame } from '../src/storage/cahStorage';
@@ -88,6 +88,49 @@ function FleuronDivider({ gold }: { gold: string }) {
     </Svg>
   );
 }
+
+function IdentifyMark({ size = 60, gold, sepia }: { size?: number; gold: string; sepia: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 60 60">
+      {/* card silhouette — same rounded-rect motif as a sleeve display */}
+      <Rect
+        x={16}
+        y={8}
+        width={28}
+        height={44}
+        rx={3}
+        stroke={gold}
+        strokeWidth="1.4"
+        fill={sepia}
+        fillOpacity="0.18"
+      />
+      {/* big numeral as the "this sleeve is N" stamp */}
+      <SvgText
+        x={30}
+        y={36}
+        textAnchor="middle"
+        fill={gold}
+        fontSize={22}
+        fontWeight="700"
+      >
+        #
+      </SvgText>
+      {/* faint zone-strip cues at the bottom of the card */}
+      <Path d="M 20 44 L 26 44" stroke={gold} strokeWidth="0.8" strokeLinecap="round" />
+      <Path d="M 28 44 L 34 44" stroke={gold} strokeWidth="0.8" strokeLinecap="round" />
+      <Path d="M 36 44 L 40 44" stroke={gold} strokeWidth="0.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+const DIAGNOSTICS_TILE: GameDef = {
+  id: 'diag',
+  shortLabel: 'Diagnostics',
+  title: 'Sleeve Diagnostics',
+  Mark: IdentifyMark,
+  available: true,
+  route: '/diagnostics',
+};
 
 export default function GameSelectScreen() {
   const colors = useTheme();
@@ -211,6 +254,10 @@ export default function GameSelectScreen() {
             <TileButton game={GAMES[2]} />
             <TileButton game={GAMES[3]} />
           </View>
+          <View style={styles.tileRow}>
+            <TileButton game={DIAGNOSTICS_TILE} />
+            <View style={[styles.tileWrap, styles.tilePhantom]} />
+          </View>
         </View>
       </TomePageFrame>
     </View>
@@ -281,6 +328,7 @@ function makeStyles(colors: Theme) { return StyleSheet.create({
     flex: 1,
     aspectRatio: 4 / 5,
   },
+  tilePhantom: { opacity: 0 },
   tilePressable: {
     flex: 1,
   },
