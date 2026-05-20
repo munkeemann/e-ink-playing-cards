@@ -1,6 +1,7 @@
 import { AppSettings, CardInstance } from '../types';
 import { PI_SERVER, mtgDescriptor, sendToSleeve } from './sleeveService';
 import { timedFetch } from './http';
+import { PI_CONCURRENCY, makeSemaphore } from './concurrency';
 
 export { PI_SERVER };
 
@@ -10,28 +11,8 @@ const PI_FETCH_TIMEOUT_MS = 5000;
 const PI_POST_TIMEOUT_MS = 3000;
 const SCRYFALL_IMAGE_TIMEOUT_MS = 5000;
 const SLEEVE_SELECT_POLL_TIMEOUT_MS = 30_000;
-// Concurrency cap on parallel beginGame per-sleeve POSTs. Keeps the Pi
-// HTTP server from being swamped while still saturating the link.
-const PI_CONCURRENCY = 8;
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
-
-/**
- * Minimal counting semaphore — caps concurrent in-flight async work.
- * Used by beginGame to fan out per-sleeve POSTs in parallel without
- * overwhelming the Pi. Acquire before work, release in a `finally`.
- */
-function makeSemaphore(max: number) {
-  let active = 0;
-  const queue: Array<() => void> = [];
-  return {
-    acquire: (): Promise<void> => new Promise(resolve => {
-      if (active < max) { active++; resolve(); }
-      else queue.push(() => { active++; resolve(); });
-    }),
-    release: () => { active--; const next = queue.shift(); if (next) next(); },
-  };
-}
 
 /**
  * Returns the list of registered sleeve IDs from the Pi, or an empty array
@@ -322,13 +303,24 @@ export async function beginGame(
       if (registeredSet.has(card.sleeveId!)) eligible.push(card);
       else console.log(`[Pi] Sleeve ${card.sleeveId} not registered — skipping`);
     }
-    const total = eligible.length;
+
+    // Stale = registered sleeves that aren't getting a fresh push this game.
+    // We dispatch /clear for each so the e-ink doesn't keep displaying the
+    // previous game's art. Reuses the same registered-sleeves input, no refetch.
+    const eligibleSleeveIds = new Set(eligible.map(c => c.sleeveId!));
+    const stale: number[] = [];
+    for (const sid of registeredSet) {
+      if (!eligibleSleeveIds.has(sid)) stale.push(sid);
+    }
+    stale.sort((a, b) => a - b);
+
+    const total = eligible.length + stale.length;
 
     const t0 = Date.now();
     const sem = makeSemaphore(PI_CONCURRENCY);
     let sent = 0;
 
-    const tasks = eligible.map(card => (async () => {
+    const pushTasks = eligible.map(card => (async () => {
       const sid = card.sleeveId!;
       await sem.acquire();
       const start = Date.now();
@@ -353,14 +345,29 @@ export async function beginGame(
       }
     })());
 
-    const results = await Promise.allSettled(tasks);
+    const clearTasks = stale.map(sid => (async () => {
+      await sem.acquire();
+      const start = Date.now();
+      try {
+        await clearSleeve(sid, serverUrl);
+        const ms = Date.now() - start;
+        console.log(`[Pi] cleared stale sleeve ${sid} (${ms}ms)`);
+        return { ok: true as const, sid, ms };
+      } finally {
+        sem.release();
+        sent++;
+        onProgress?.(sent, total);
+      }
+    })());
+
+    const results = await Promise.allSettled([...pushTasks, ...clearTasks]);
     const okCount = results.reduce(
       (n, r) => n + (r.status === 'fulfilled' && r.value.ok ? 1 : 0),
       0,
     );
     const elapsed = Date.now() - t0;
 
-    console.log(`[Pi] beginGame complete: ${okCount}/${total} registered sleeves pushed in ${elapsed}ms`);
+    console.log(`[Pi] beginGame complete: ${okCount}/${total} (${eligible.length} pushed, ${stale.length} cleared) in ${elapsed}ms`);
   } catch (e) {
     console.error('[Pi] beginGame outer catch:', e instanceof Error ? e.message : e);
   }
