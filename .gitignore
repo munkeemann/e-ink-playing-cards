@@ -12,3 +12,13 @@ dist/
 *.orig.*
 web-build/
 .DS_Store
+
+# Local tool settings, build output, backups
+.claude/settings.local.json
+.idea/
+.gradle/
+.kotlin/
+build/
+local.properties
+__pycache__/
+*.bak

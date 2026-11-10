@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.AndroidApp" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- App core colors -->
+        <item name="colorPrimary">#d4cdc1</item>         <!-- for highlights/icons -->
+        <item name="colorOnPrimary">#292e32</item>       <!-- text on primary -->
+        <item name="android:colorBackground">#292e32</item> <!-- main background -->
+        <item name="colorSurface">#292e32</item>         <!-- cards/containers -->
+        <item name="colorOnSurface">#d4cdc1</item>       <!-- text on cards -->
+        <item name="android:statusBarColor" tools:targetApi="l">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:windowBackground">#292e32</item>
+    </style>
+
+</resources>

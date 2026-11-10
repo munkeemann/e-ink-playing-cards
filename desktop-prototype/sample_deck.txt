@@ -1,0 +1,100 @@
+ 1: Grand Arbiter Augustin IV (Commander)
+ 2: Maze of Ith
+ 3: Fierce Guardianship
+ 4: Farewell
+ 5: Prairie Stream
+ 6: Island_5
+ 7: Armageddon
+ 8: Sphere of Safety
+ 9: Elesh Norn  The Argent Etchings
+10: Island_9
+11: Lightning Greaves
+12: Narset Transcendent
+13: Rhystic Study
+14: Enlightened Tutor
+15: Mana Drain
+16: Island_6
+17: Consecrated Sphinx
+18: Temple of Enlightenment
+19: Archon of Emeria
+20: Propaganda
+21: Island_8
+22: Thalia, Heretic Cathar
+23: Path to Exile
+24: Sphere of Resistance
+25: Land Tax
+26: Talisman of Progress
+27: Linvala, Keeper of Silence
+28: Elesh Norn, Mother of Machines
+29: Wandering Archaic  Explore the Vastlands
+30: Hall of Heliod's Generosity
+31: Island_4
+32: Command Tower
+33: Reliquary Tower
+34: Aura of Silence C15-60
+35: Winter Orb
+36: Island_3
+37: Esper Sentinel
+38: Heliod, Sun-Crowned
+39: Deserted Beach
+40: Teferi, Time Raveler
+41: Swords to Plowshares
+42: Plains_2
+43: Norn's Annex
+44: Plains_7
+45: Fatespinner
+46: Lavinia, Azorius Renegade
+47: Sensei's Divining Top
+48: Solemnity
+49: Plains_5
+50: Smothering Tithe
+51: Plains_1
+52: Mystical Tutor
+53: Arcane Signet
+54: Sol Ring
+55: Supreme Verdict
+56: Nimbus Maze
+57: Idyllic Tutor
+58: Azorius Signet
+59: Cyclonic Rift
+60: Otawara, Soaring City
+61: Teferi's Protection
+62: Mechanized Production
+63: Walking Ballista
+64: Plains_3
+65: Metropolis Reformer
+66: Static Orb
+67: Painter's Servant
+68: Authority of the Consuls
+69: Sea of Clouds
+70: Grand Abolisher
+71: Blind Obedience
+72: Gitaxian Probe
+73: Counterspell
+74: Counterbalance
+75: Island_1
+76: Windborn Muse
+77: Grafdigger's Cage
+78: Elesh Norn, Grand Cenobite
+79: Evolving Wilds
+80: Ponder
+81: Plains_8
+82: Soulless Jailer
+83: Grindstone
+84: Plains_4
+85: Drannith Magistrate
+86: God-Pharaoh's Statue
+87: Containment Priest
+88: Glacial Fortress
+89: The Reality Chip
+90: Teferi, Hero of Dominaria
+91: Island_2
+92: Island_7
+93: Plains_9
+94: Hallowed Fountain
+95: Azorius Chancery
+96: Snapcaster Mage ISD-78
+97: Flooded Strand
+98: Skycloud Expanse
+99: Plains_6
+100: Preordain
